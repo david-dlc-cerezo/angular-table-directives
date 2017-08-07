@@ -1,0 +1,21 @@
+{
+  "name": "angular-table-directives",
+  "homepage": "https://github.com/david-dlc-cerezo/angular-table-directives",
+  "authors": [
+    "David de la Calle Cerezo <david.dlc.cerezo@gmail.com>"
+  ],
+  "description": "Table directives using AngularJS",
+  "main": "dist/angular-table-directives.min.js",
+  "keywords": [
+    "angular",
+    "tables"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
