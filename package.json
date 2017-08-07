@@ -20,5 +20,12 @@
   "bugs": {
     "url": "https://github.com/david-dlc-cerezo/angular-table-directives/issues"
   },
-  "homepage": "https://github.com/david-dlc-cerezo/angular-table-directives#readme"
+  "homepage": "https://github.com/david-dlc-cerezo/angular-table-directives#readme",
+  "devDependencies": {
+    "babel-core": "^6.25.0",
+    "babel-loader": "^7.1.1",
+    "babel-preset-env": "^1.6.0",
+    "uglifyjs-webpack-plugin": "^0.4.6",
+    "webpack": "^3.4.1"
+  }
 }
