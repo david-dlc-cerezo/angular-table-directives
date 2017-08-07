@@ -1,0 +1,24 @@
+{
+  "name": "angular-table-directives",
+  "version": "1.0.0",
+  "description": "Table directives using AngularJS",
+  "main": "dist/angular-table-directives.min.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/david-dlc-cerezo/angular-table-directives.git"
+  },
+  "keywords": [
+    "angular",
+    "angularjs",
+    "tables"
+  ],
+  "author": "David de la Calle Cerezo <david.dlc.cerezo@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/david-dlc-cerezo/angular-table-directives/issues"
+  },
+  "homepage": "https://github.com/david-dlc-cerezo/angular-table-directives#readme"
+}
