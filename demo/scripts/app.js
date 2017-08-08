@@ -3,6 +3,8 @@
 
     require('angular');
     require('angular-sanitize');
+    require('angular-bootstrap');
+    require('ng-csv');
     require('../../src/module.js');
 
     angular.module('demoApp', ['ngTablesDirectives'])
@@ -30,9 +32,23 @@
             }
         ];
 
+        vm.actions = [{
+            title: 'Delete',
+            icon: 'fa fa-fw fa-trash',
+            showIf: (rowData) => (rowData.location.city.indexOf('a') !== -1),
+            onClick: (rowData) => {
+                for(var i in vm.tableData){
+                    if(vm.tableData[i] === rowData){
+                        vm.tableData.splice(i, 1);
+                        break;
+                    }
+                }
+            }
+        }];
+
         $http.get('https://api.citybik.es/v2/networks')
             .then(response => {
-                vm.tableData = response.data;
+                vm.tableData = response.data.networks;
             });
     }
 })();

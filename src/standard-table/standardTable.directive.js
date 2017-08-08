@@ -138,7 +138,6 @@
                         var value = angular.isFunction(row[field]) ? row[field]() : row[field];
                         // If the result is an array -> join it
                         value = (angular.isArray(value)) ? value.join('<br/> ') : value;
-                        console.log(field, value);
                         return value;
                     }
                 } else {

@@ -1,0 +1,4 @@
+<button ng-repeat="action in actions" class="btn btn-default" ng-click="action.onClick(rowData)" uib-tooltip="{{action.title}}" uib-tooltip-animation="false" ng-if="(action.showIf) ? action.showIf(rowData) : true">
+    <i ng-if="action.icon" ng-class="action.icon"></i>
+    <span ng-if="!action.icon">{{action.title}}</span>
+</button>

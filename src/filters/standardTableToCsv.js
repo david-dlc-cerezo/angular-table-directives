@@ -29,13 +29,13 @@
                 filteredTable = table;
             }
 
-            // 2. Show only the columns on column definition
+            // 2. Export only the columns on column definition
             var outputTable = [];
             if (columnsDefinition){
                 angular.forEach(filteredTable, function(row) {
                     var newRow = {};
                     angular.forEach(columnsDefinition, function(column) {
-                        newRow[column.fieldName] = angular.isFunction(row[column.fieldName]) ? row[column.fieldName]() : row[column.fieldName];
+                        newRow[column.field] = _getValue(row, column.field);
                     });
                     outputTable.push(newRow);
                 });
@@ -45,5 +45,19 @@
 
             return outputTable;
         };
+    }
+
+    function _getValue(row, field){
+        if (angular.isObject(row) && angular.isString(field)) {
+            var dotIndex = field.indexOf('.');
+            if (dotIndex !== -1) {
+                return _getValue(row[field.substr(0, dotIndex)], field.substr(dotIndex + 1));
+            } else {
+                // If the result is a fuction -> run it
+                return angular.isFunction(row[field]) ? row[field]() : row[field];
+            }
+        } else {
+            return '';
+        }
     }
 })();
