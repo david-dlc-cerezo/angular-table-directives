@@ -30,14 +30,14 @@
                                 <input ng-if="column.filter === true || column.filter === 'text'" type="text" ng-model="filterData.columns[column.field]" />
                                 <select ng-if="column.filter === 'select'" ng-model="filterData.columns[column.field]">
                                     <option value=""></option>
-                                    <option ng-repeat="option in vm.getUniqueColumnValues(column)" value="option">{{option}}</option>
+                                    <option ng-repeat="option in vm.getUniqueColumnValues(column)" ng-value="option">{{option}}</option>
                                 </select>
                             </div>
                         </th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr ng-repeat="rowData in tableData">
+                    <tr ng-repeat="rowData in (tableData | filterStandartTable : filterData : columns | orderBy : vmTable.getOrderValue : vmTable.sort.reverse)">
                         <td ng-repeat="column in columns" headers="{{column.field}}"> <!--ng-click="column.onClick(rowData)" ng-class="[vmRow.getClass(rowData, column)]"-->
                             <span ng-bind-html='vm.getValue(rowData, column.field)' uib-tooltip-html="'{{column.tooltip}}'"></span>
                         </td>

@@ -4,6 +4,7 @@
     module.exports = function(ngModule) {
         ngModule.filter('filterStandartTable', [
             '$filter',
+            'StandardTableUtilities',
             filterStandartTable
         ]);
     };
@@ -30,23 +31,7 @@
     /**
      * Format Table data as text.
      */
-    function filterStandartTable($filter) {
-
-        /**
-         * Get row Value
-         * @param  {Object} row       Row object
-         * @param  {String} fieldName Field name to get
-         * @return {String}           Value to show
-         */
-        function getRowValue(row, fieldName) {
-            // Is a function -> run it
-            var value = (angular.isFunction(row[fieldName])) ? row[fieldName]() : row[fieldName];
-
-            // If the result is an array -> join it
-            value = (angular.isArray(value)) ? value.join('<br/> ') : value;
-
-            return value;
-        }
+    function filterStandartTable($filter, StandardTableUtilities) {
 
         /**
          * Is there an active filter for columns?
@@ -75,7 +60,7 @@
          */
         function filterRowByText(row, textFilter, columnsDefinition) {
             for (var i = 0; i < columnsDefinition.length; i++) {
-                var value = getRowValue(row, columnsDefinition[i].fieldName);
+                var value = StandardTableUtilities.getValue(row, columnsDefinition[i].field);
                 if (value && textFilter && contains(value, textFilter)) {
                     return true;
                 }
@@ -93,10 +78,9 @@
         function filterRowByColumnFilters(row, columnFilter, columnsDefinition) {
             for (var i = 0; i < columnsDefinition.length; i++) {
                 var column = columnsDefinition[i];
-                var fieldName = column.fieldName;
-                var columnFilterValue = columnFilter[fieldName];
+                var columnFilterValue = columnFilter[column.field];
                 if (columnFilterValue) {
-                    var value = getRowValue(row, fieldName);
+                    var value = StandardTableUtilities.getValue(row, column.field);
                     if (!filterValueColumn(value, columnFilterValue, column.filter)) {
                         return false;
                     }

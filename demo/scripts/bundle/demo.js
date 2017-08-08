@@ -42590,6 +42590,7 @@ angular.module('ui.bootstrap.typeahead').run(function() {!angular.$$csp().noInli
     'use strict';
 
     module.exports = function (ngTablesDirectives) {
+        __webpack_require__(16)(ngTablesDirectives);
         __webpack_require__(8)(ngTablesDirectives);
         __webpack_require__(9)(ngTablesDirectives);
         __webpack_require__(10)(ngTablesDirectives);
@@ -42635,12 +42636,12 @@ angular.module('ui.bootstrap.typeahead').run(function() {!angular.$$csp().noInli
                 showExport: '=?'
             },
             templateUrl: '/src/standard-table/standard-table.html',
-            controller: ['$scope', '$filter', StandardTableController],
+            controller: ['$scope', '$filter', 'StandardTableUtilities', StandardTableController],
             controllerAs: 'vm'
         };
     }
 
-    function StandardTableController($scope, $filter) {
+    function StandardTableController($scope, $filter, StandardTableUtilities) {
         var vm = this;
 
         $scope.filterData = $scope.filterData || {};
@@ -42736,21 +42737,9 @@ angular.module('ui.bootstrap.typeahead').run(function() {!angular.$$csp().noInli
              * @return {String}       Value to show
              */
             getValue: function getValue(row, field) {
-                if (angular.isObject(row) && angular.isString(field)) {
-                    var dotIndex = field.indexOf('.');
-                    if (dotIndex !== -1) {
-                        return this.getValue(row[field.substr(0, dotIndex)], field.substr(dotIndex + 1));
-                    } else {
-                        // If the result is a fuction -> run it
-                        var value = angular.isFunction(row[field]) ? row[field]() : row[field];
-                        // If the result is an array -> join it
-                        value = angular.isArray(value) ? value.join('<br/> ') : value;
-                        return value;
-                    }
-                } else {
-                    return '';
-                }
+                return StandardTableUtilities.getValue(row, field);
             },
+
 
             /**
              * Is field the current sorting field?
@@ -42949,7 +42938,7 @@ angular.module('ui.bootstrap.typeahead').run(function() {!angular.$$csp().noInli
     'use strict';
 
     module.exports = function (ngModule) {
-        ngModule.filter('filterStandartTable', ['$filter', filterStandartTable]);
+        ngModule.filter('filterStandartTable', ['$filter', 'StandardTableUtilities', filterStandartTable]);
     };
 
     /**
@@ -42974,23 +42963,7 @@ angular.module('ui.bootstrap.typeahead').run(function() {!angular.$$csp().noInli
     /**
      * Format Table data as text.
      */
-    function filterStandartTable($filter) {
-
-        /**
-         * Get row Value
-         * @param  {Object} row       Row object
-         * @param  {String} fieldName Field name to get
-         * @return {String}           Value to show
-         */
-        function getRowValue(row, fieldName) {
-            // Is a function -> run it
-            var value = angular.isFunction(row[fieldName]) ? row[fieldName]() : row[fieldName];
-
-            // If the result is an array -> join it
-            value = angular.isArray(value) ? value.join('<br/> ') : value;
-
-            return value;
-        }
+    function filterStandartTable($filter, StandardTableUtilities) {
 
         /**
          * Is there an active filter for columns?
@@ -43019,7 +42992,7 @@ angular.module('ui.bootstrap.typeahead').run(function() {!angular.$$csp().noInli
          */
         function filterRowByText(row, textFilter, columnsDefinition) {
             for (var i = 0; i < columnsDefinition.length; i++) {
-                var value = getRowValue(row, columnsDefinition[i].fieldName);
+                var value = StandardTableUtilities.getValue(row, columnsDefinition[i].field);
                 if (value && textFilter && contains(value, textFilter)) {
                     return true;
                 }
@@ -43037,10 +43010,9 @@ angular.module('ui.bootstrap.typeahead').run(function() {!angular.$$csp().noInli
         function filterRowByColumnFilters(row, columnFilter, columnsDefinition) {
             for (var i = 0; i < columnsDefinition.length; i++) {
                 var column = columnsDefinition[i];
-                var fieldName = column.fieldName;
-                var columnFilterValue = columnFilter[fieldName];
+                var columnFilterValue = columnFilter[column.field];
                 if (columnFilterValue) {
-                    var value = getRowValue(row, fieldName);
+                    var value = StandardTableUtilities.getValue(row, column.field);
                     if (!filterValueColumn(value, columnFilterValue, column.filter)) {
                         return false;
                     }
@@ -43130,13 +43102,13 @@ angular.module('ui.bootstrap.typeahead').run(function() {!angular.$$csp().noInli
     'use strict';
 
     module.exports = function (ngModule) {
-        ngModule.filter('standartTableToCsv', ['$filter', standartTableToCsvFilter]);
+        ngModule.filter('standartTableToCsv', ['$filter', 'StandardTableUtilities', standartTableToCsvFilter]);
     };
 
     /**
      * Convert a Standard table data into a CSV
      */
-    function standartTableToCsvFilter($filter) {
+    function standartTableToCsvFilter($filter, StandardTableUtilities) {
         /**
          * Filter function
          * @param  {Array}  table             Table to convert
@@ -43160,7 +43132,7 @@ angular.module('ui.bootstrap.typeahead').run(function() {!angular.$$csp().noInli
                 angular.forEach(filteredTable, function (row) {
                     var newRow = {};
                     angular.forEach(columnsDefinition, function (column) {
-                        newRow[column.field] = _getValue(row, column.field);
+                        newRow[column.field] = StandardTableUtilities.getValue(row, column.field, '|');
                     });
                     outputTable.push(newRow);
                 });
@@ -43171,19 +43143,54 @@ angular.module('ui.bootstrap.typeahead').run(function() {!angular.$$csp().noInli
             return outputTable;
         };
     }
+})();
 
-    function _getValue(row, field) {
-        if (angular.isObject(row) && angular.isString(field)) {
-            var dotIndex = field.indexOf('.');
-            if (dotIndex !== -1) {
-                return _getValue(row[field.substr(0, dotIndex)], field.substr(dotIndex + 1));
-            } else {
-                // If the result is a fuction -> run it
-                return angular.isFunction(row[field]) ? row[field]() : row[field];
+/***/ }),
+/* 16 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+(function () {
+    'use strict';
+
+    module.exports = function (ngModule) {
+        ngModule.service('StandardTableUtilities', StandardTableUtilities);
+    };
+
+    function StandardTableUtilities() {
+        var StandardTableUtilities = this;
+
+        StandardTableUtilities = {
+            /**
+             * Get the value to show for a row and a field name
+             * @param  {Object} row       Data onject for the row
+             * @param  {String} field     Field name to show
+             * @param  {String} separator [Optional] Separator for arrays
+             * @return {String}           Value to show
+             */
+            getValue: function getValue(row, field) {
+                var separator = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '<br/>';
+
+                if (angular.isObject(row) && angular.isString(field)) {
+                    var dotIndex = field.indexOf('.');
+                    if (dotIndex !== -1) {
+                        return this.getValue(row[field.substr(0, dotIndex)], field.substr(dotIndex + 1));
+                    } else {
+                        // If the result is a fuction -> run it
+                        var value = angular.isFunction(row[field]) ? row[field]() : row[field];
+                        // If the result is an array -> join it
+                        value = angular.isArray(value) ? value.join(separator) : value;
+                        return value;
+                    }
+                } else {
+                    return '';
+                }
             }
-        } else {
-            return '';
-        }
+        };
+
+        return StandardTableUtilities;
     }
 })();
 

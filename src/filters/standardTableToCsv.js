@@ -4,6 +4,7 @@
     module.exports = function(ngModule) {
         ngModule.filter('standartTableToCsv', [
             '$filter',
+            'StandardTableUtilities',
             standartTableToCsvFilter
         ]);
     };
@@ -11,7 +12,7 @@
     /**
      * Convert a Standard table data into a CSV
      */
-    function standartTableToCsvFilter($filter) {
+    function standartTableToCsvFilter($filter, StandardTableUtilities) {
         /**
          * Filter function
          * @param  {Array}  table             Table to convert
@@ -35,7 +36,7 @@
                 angular.forEach(filteredTable, function(row) {
                     var newRow = {};
                     angular.forEach(columnsDefinition, function(column) {
-                        newRow[column.field] = _getValue(row, column.field);
+                        newRow[column.field] = StandardTableUtilities.getValue(row, column.field, '|');
                     });
                     outputTable.push(newRow);
                 });
@@ -45,19 +46,5 @@
 
             return outputTable;
         };
-    }
-
-    function _getValue(row, field){
-        if (angular.isObject(row) && angular.isString(field)) {
-            var dotIndex = field.indexOf('.');
-            if (dotIndex !== -1) {
-                return _getValue(row[field.substr(0, dotIndex)], field.substr(dotIndex + 1));
-            } else {
-                // If the result is a fuction -> run it
-                return angular.isFunction(row[field]) ? row[field]() : row[field];
-            }
-        } else {
-            return '';
-        }
     }
 })();

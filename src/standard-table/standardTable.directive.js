@@ -31,13 +31,14 @@
             controller: [
                 '$scope',
                 '$filter',
+                'StandardTableUtilities',
                 StandardTableController
             ],
             controllerAs: 'vm'
         };
     }
 
-    function StandardTableController($scope, $filter) {
+    function StandardTableController($scope, $filter, StandardTableUtilities) {
         var vm = this;
 
         $scope.filterData = $scope.filterData || {};
@@ -129,21 +130,9 @@
              * @return {String}       Value to show
              */
             getValue(row, field) {
-                if (angular.isObject(row) && angular.isString(field)) {
-                    var dotIndex = field.indexOf('.');
-                    if (dotIndex !== -1) {
-                        return this.getValue(row[field.substr(0, dotIndex)], field.substr(dotIndex + 1));
-                    } else {
-                        // If the result is a fuction -> run it
-                        var value = angular.isFunction(row[field]) ? row[field]() : row[field];
-                        // If the result is an array -> join it
-                        value = (angular.isArray(value)) ? value.join('<br/> ') : value;
-                        return value;
-                    }
-                } else {
-                    return '';
-                }
+                return StandardTableUtilities.getValue(row, field);
             },
+            
             /**
              * Is field the current sorting field?
              * @param  {Object}  column Column to check
