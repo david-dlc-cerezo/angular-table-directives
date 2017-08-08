@@ -26,6 +26,7 @@
     "font-awesome": "fontawesome#^4.7.0",
     "angular-sanitize": "^1.6.5",
     "ng-csv": "^0.3.6",
-    "angular-bootstrap": "^2.5.0"
+    "angular-bootstrap": "^2.5.0",
+    "angular-filter": "^0.5.16"
   }
 }

@@ -4,6 +4,7 @@
     require('angular');
     require('angular-sanitize');
     require('angular-bootstrap');
+    require('angular-filter');
     require('ng-csv');
     require('../../src/module.js');
 
