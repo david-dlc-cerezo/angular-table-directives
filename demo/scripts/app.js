@@ -11,10 +11,11 @@
     angular.module('demoApp', ['ngTablesDirectives'])
         .controller('demoController', [
             '$http',
+            '$q',
             DemoController
         ]);
 
-    function DemoController($http) {
+    function DemoController($http, $q) {
         var vm = this;
 
         vm.columns = [{
@@ -47,9 +48,19 @@
             }
         }];
 
-        $http.get('https://api.citybik.es/v2/networks')
-            .then(response => {
-                vm.tableData = response.data.networks;
-            });
+
+        vm.loadData = function(){
+            var deferred = $q.defer();
+
+            $http.get('https://api.citybik.es/v2/networks')
+                .then(response => {
+                    vm.tableData = response.data.networks;
+                    deferred.resolve(response.data.networks);
+                })
+                .catch(deferred.reject);
+
+            return deferred.promise;
+        };
+        vm.loadData();
     }
 })();

@@ -80,9 +80,9 @@
     __webpack_require__(5);
     __webpack_require__(6);
 
-    angular.module('demoApp', ['ngTablesDirectives']).controller('demoController', ['$http', DemoController]);
+    angular.module('demoApp', ['ngTablesDirectives']).controller('demoController', ['$http', '$q', DemoController]);
 
-    function DemoController($http) {
+    function DemoController($http, $q) {
         var vm = this;
 
         vm.columns = [{
@@ -114,9 +114,17 @@
             }
         }];
 
-        $http.get('https://api.citybik.es/v2/networks').then(function (response) {
-            vm.tableData = response.data.networks;
-        });
+        vm.loadData = function () {
+            var deferred = $q.defer();
+
+            $http.get('https://api.citybik.es/v2/networks').then(function (response) {
+                vm.tableData = response.data.networks;
+                deferred.resolve(response.data.networks);
+            }).catch(deferred.reject);
+
+            return deferred.promise;
+        };
+        vm.loadData();
     }
 })();
 
@@ -42578,6 +42586,7 @@ angular.module('ui.bootstrap.typeahead').run(function() {!angular.$$csp().noInli
 
     __webpack_require__(20)(ngTablesDirectives);
     __webpack_require__(17)(ngTablesDirectives);
+    __webpack_require__(27)(ngTablesDirectives);
     __webpack_require__(14)(ngTablesDirectives);
 })();
 
@@ -45669,6 +45678,153 @@ angular.module('angular.filter', [
                 rowData: '='
             },
             templateUrl: '/src/standardTable/action-buttons.html'
+        };
+    }
+})();
+
+/***/ }),
+/* 27 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+(function () {
+    'use strict';
+
+    module.exports = function (ngTablesDirectives) {
+        __webpack_require__(28)(ngTablesDirectives);
+        __webpack_require__(31)(ngTablesDirectives);
+        __webpack_require__(30)(ngTablesDirectives);
+    };
+})();
+
+/***/ }),
+/* 28 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+(function () {
+    'use strict';
+
+    module.exports = function (ngModule) {
+        ngModule.directive('dynamicTable', dynamicTableDirective);
+    };
+
+    /**
+     * Dynamic Table Directive
+     * @return {Object} Directive configuration object for <dynamic-table> directive
+     */
+    function dynamicTableDirective() {
+        return {
+            restrict: 'E',
+            scope: {
+                loadDataFn: '=',
+                reloadEvent: '=?',
+                columns: '=',
+                actions: '=?',
+                admin: '=?',
+                showFilter: '=?',
+                filterData: '=?filter',
+                disableOrder: '=?',
+                sort: '=?',
+                groupBy: '=?',
+                notFound: '=?',
+                showExport: '=?'
+            },
+            templateUrl: '/src/dynamicTable/dynamic-table.html',
+            controller: ['$scope', DynamicTableCtrl],
+            controllerAs: 'vm'
+        };
+    }
+
+    function DynamicTableCtrl($scope) {
+        var vm = this;
+
+        $scope.filterData = $scope.filterData || {};
+
+        // Before continue check if 'loadDataFn' is a function
+        if (!angular.isFunction($scope.loadDataFn)) {
+            console.error('DynamicTable: loadDataFn is not a function', $scope.loadDataFn);
+        } else {
+            /**
+             * Runs the function to load the data
+             */
+            vm.loadData = function () {
+                vm.loadingData = true;
+                $scope.loadDataFn().then(function (newTableData) {
+                    vm.tableData = newTableData;
+                }).catch(function () {
+                    vm.tableData = [];
+                }).finally(function () {
+                    vm.loadingData = false;
+                });
+            };
+
+            // Load 1st time
+            // vm.loadData();
+
+            // Watch for changes
+            $scope.$watch('loadDataFn', vm.loadData);
+
+            // Reload data on event
+            if ($scope.reloadEvent) {
+                $scope.$on($scope.reloadEvent, function () {
+                    vm.loadData();
+                });
+            }
+        }
+    }
+})();
+
+/***/ }),
+/* 29 */,
+/* 30 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+(function () {
+    'use strict';
+
+    module.exports = function (ngModule) {
+        ngModule.directive('dynamicTableLoading', loadingDirective);
+    };
+
+    function loadingDirective() {
+        return {
+            restrict: 'E',
+            templateUrl: '/src/dynamicTable/loading.html'
+        };
+    }
+})();
+
+/***/ }),
+/* 31 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+(function () {
+    'use strict';
+
+    module.exports = function (ngModule) {
+        ngModule.directive('dynamicTableRefreshButton', dynamicTableRefreshButtonDirective);
+    };
+
+    /**
+     * Dynamic Table Refresh Button Directive
+     * @return {Object} Directive configuration object for <dynamic-table-refresh-button> directive
+     */
+    function dynamicTableRefreshButtonDirective() {
+        return {
+            restrict: 'E',
+            scope: true,
+            templateUrl: '/src/dynamicTable/refresh-button.html'
         };
     }
 })();

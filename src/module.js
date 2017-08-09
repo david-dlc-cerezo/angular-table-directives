@@ -10,5 +10,6 @@
 
     require('./standardTable')(ngTablesDirectives);
     require('./groupTables')(ngTablesDirectives);
+    require('./dynamicTable')(ngTablesDirectives);
     require('./filters')(ngTablesDirectives);
 })();

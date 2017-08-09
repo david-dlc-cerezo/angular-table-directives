@@ -1,0 +1,14 @@
+<div ng-if="!vm.loadingData">
+    <standard-table ng-if="!groupBy" table-data="vm.tableData" columns="columns" actions="actions" admin="admin" show-filter="showFilter" filter="filterData" disable-order="disableOrder" sort="sort" not-found="notFound" show-export="showExport">
+        <standard-table-buttons>
+            <dynamic-table-refresh-button></dynamic-table-refresh-button>
+        </standard-table-buttons>
+    </standard-table>
+
+    <group-tables ng-if="groupBy" table-data="vm.tableData" group-by="groupBy" columns="columns" actions="actions" admin="admin" show-filter="showFilter" filter="filterData" disable-order="disableOrder" sort="sort" not-found="notFound" show-export="showExport">
+        <group-table-buttons>
+            <dynamic-table-refresh-button></dynamic-table-refresh-button>
+        </group-table-buttons>
+    </group-tables>
+</div>
+<dynamic-table-loading ng-if="vm.loadingData"></dynamic-table-loading>

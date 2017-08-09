@@ -12,7 +12,7 @@
 </head>
 
 <body ng-app="demoApp">
-    <div class="container-fluid" ng-controller="demoController as vm" ng-init="activeTab = 1">
+    <div class="container-fluid" ng-controller="demoController as vm" ng-init="activeTab = 0">
         <div class="jumbotron">
             <h1>Demo angular-tables-directives</h1>
             <p>
@@ -21,6 +21,9 @@
         </div>
 
         <ul class="nav nav-tabs" role="tablist">
+            <li ng-click="activeTab = 0" ng-class="{ 'active':activeTab === 0 }" role="presentation">
+                <a role="tab" href="#">dynamic-table</a>
+            </li>
             <li ng-click="activeTab = 1" ng-class="{ 'active':activeTab === 1 }" role="presentation">
                 <a role="tab" href="#">standard-table</a>
             </li>
@@ -29,6 +32,10 @@
             </li>
         </ul>
         <div class="tab-content">
+            <div class="tab-pane fade" role="tabpanel" ng-class="{ 'in active': activeTab === 0 }">
+                <h2>dynamic-table</h2>
+                <dynamic-table load-data-fn="vm.loadData" columns="vm.columns" actions="vm.actions" show-filter="true"></dynamic-table>
+            </div>
             <div class="tab-pane fade" role="tabpanel" ng-class="{ 'in active': activeTab === 1 }">
                 <h2>standard-table</h2>
                 <standard-table table-data="vm.tableData" columns="vm.columns" actions="vm.actions" show-filter="true"></standard-table>
