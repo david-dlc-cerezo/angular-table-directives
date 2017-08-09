@@ -13,7 +13,7 @@
                 bodyTranslateKey: '=?',
                 bodyTranslateValues: '=?'
             },
-            templateUrl: '/src/standard-table/no-data.html'
+            templateUrl: '/src/standardTable/no-data.html'
         };
     }
 })();

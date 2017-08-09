@@ -11,7 +11,7 @@
             scope: {
                 filterData: '=filter',
             },
-            templateUrl: '/src/standard-table/filter-field.html',
+            templateUrl: '/src/standardTable/filter-field.html',
             controller: [
                 '$scope',
                 StandardTableFilterFieldController

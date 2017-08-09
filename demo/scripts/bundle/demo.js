@@ -42576,397 +42576,19 @@ angular.module('ui.bootstrap.typeahead').run(function() {!angular.$$csp().noInli
 
     var ngTablesDirectives = angular.module('ngTablesDirectives', ['ngSanitize', 'ngCsv', 'ui.bootstrap', 'angular.filter']);
 
-    __webpack_require__(7)(ngTablesDirectives);
+    __webpack_require__(20)(ngTablesDirectives);
     __webpack_require__(17)(ngTablesDirectives);
     __webpack_require__(14)(ngTablesDirectives);
 })();
 
 /***/ }),
-/* 7 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-(function () {
-    'use strict';
-
-    module.exports = function (ngTablesDirectives) {
-        __webpack_require__(8)(ngTablesDirectives);
-        __webpack_require__(9)(ngTablesDirectives);
-        __webpack_require__(10)(ngTablesDirectives);
-        __webpack_require__(11)(ngTablesDirectives);
-        __webpack_require__(12)(ngTablesDirectives);
-        __webpack_require__(13)(ngTablesDirectives);
-    };
-})();
-
-/***/ }),
-/* 8 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-(function () {
-    'use strict';
-
-    module.exports = function (ngModule) {
-        ngModule.service('StandardTableUtilities', StandardTableUtilities);
-    };
-
-    function StandardTableUtilities() {
-        var StandardTableUtilities = this;
-
-        StandardTableUtilities = {
-            /**
-             * Get the value to show for a row and a field name
-             * @param  {Object} row       Data onject for the row
-             * @param  {String} field     Field name to show
-             * @param  {String} separator [Optional] Separator for arrays
-             * @return {String}           Value to show
-             */
-            getValue: function getValue(row, field) {
-                var separator = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '<br/>';
-
-                if (angular.isObject(row) && angular.isString(field)) {
-                    var dotIndex = field.indexOf('.');
-                    if (dotIndex !== -1) {
-                        return this.getValue(row[field.substr(0, dotIndex)], field.substr(dotIndex + 1));
-                    } else {
-                        // If the result is a fuction -> run it
-                        var value = angular.isFunction(row[field]) ? row[field]() : row[field];
-                        // If the result is an array -> join it
-                        value = angular.isArray(value) ? value.join(separator) : value;
-                        return value;
-                    }
-                } else {
-                    return '';
-                }
-            }
-        };
-
-        return StandardTableUtilities;
-    }
-})();
-
-/***/ }),
-/* 9 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-(function () {
-    'use strict';
-
-    module.exports = function (ngModule) {
-        ngModule.directive('standardTable', standardTableDirective);
-    };
-
-    /**
-     * Standard Table Directive
-     * @return {Object} Directive configuration object for <standard-table> directive
-     */
-    function standardTableDirective() {
-        return {
-            restrict: 'E',
-            transclude: {
-                'buttons': '?standardTableButtons'
-            },
-            scope: {
-                tableData: '=',
-                columns: '=',
-                actions: '=?',
-                admin: '=?',
-                showFilter: '=?',
-                filterData: '=?filter',
-                disableOrder: '=?',
-                sort: '=?',
-                notFound: '=?',
-                showExport: '=?'
-            },
-            templateUrl: '/src/standard-table/standard-table.html',
-            controller: ['$scope', '$filter', '$transclude', 'StandardTableUtilities', StandardTableController],
-            controllerAs: 'vm'
-        };
-    }
-
-    function StandardTableController($scope, $filter, $transclude, StandardTableUtilities) {
-        var vm = this;
-
-        $scope.filterData = $scope.filterData || {};
-        $scope.showExport = $scope.showExport === undefined ? true : $scope.showExport;
-        $scope.sort = angular.extend({
-            field: '',
-            reverse: false
-        }, $scope.sort);
-
-        angular.extend(vm, {
-
-            /**
-             * Change sort order to the given 'fildName'
-             * @param  {Object} column Selected column for new ordering
-             */
-            changeOrder: function changeOrder(column) {
-                // If is the active sort => reverse order
-                if (vm.isActiveSort(column)) {
-                    $scope.sort.reverse = !$scope.sort.reverse;
-                }
-                // Change the sorting field to column.field on ascending order
-                else {
-                        $scope.sort.field = column.field;
-                        $scope.sort.reverse = false;
-                    }
-            },
-
-
-            /**
-             * Get the classes to show if the current field is ordered on ascending or descending mode
-             * @param  {Object} column Column to check
-             * @return {String}        Class or classes for showing the ordenation mode
-             */
-            chevronClassesFor: function chevronClassesFor(column) {
-                return vm.isActiveSort(column) ? $scope.sort.reverse ? 'fa fa-fw fa-sort-desc' : 'fa fa-fw fa-sort-asc' : '';
-            },
-
-
-            /**
-             * Get the value for the order row
-             * @param  {Object} row     Row Data
-             * @param  {Object} columns Columns config
-             * @return {String}         Value to display
-             */
-            getOrderValue: function getOrderValue(row) {
-                return angular.isFunction(row[$scope.sort.field]) ? row[$scope.sort.field]() : row[$scope.sort.field];
-            },
-
-
-            /**
-             * Get a colection with unique values for the column
-             * @param  {Object} column Column config
-             * @return {String[]}      Array
-             */
-            getUniqueColumnValues: function getUniqueColumnValues(column) {
-                var _this = this;
-
-                var uniqueColumnValues = [];
-
-                angular.forEach($scope.tableData, function (row) {
-                    var newValue = _this.getValue(row, column.field);
-                    if (uniqueColumnValues.indexOf(newValue) === -1) {
-                        uniqueColumnValues.push(newValue);
-                    }
-                });
-
-                // Order alphabetichaly;
-                uniqueColumnValues.sort();
-
-                return uniqueColumnValues;
-            },
-
-
-            /**
-             * Get the class set for a row and columb
-             * @param  {Object} row    Row Data
-             * @param  {Object} column Column config
-             * @return {String}        Class value to display
-             */
-            getClass: function getClass(row, column) {
-                var classes = '';
-                classes += column.class || '';
-                classes += this.getValue(row, column.ngClass);
-                classes += angular.isFunction(column.onClick) ? ' clickable' : '';
-                return classes;
-            },
-
-
-            /**
-             * Get the value to show for a row and a field name
-             * @param  {Object} row   Data onject for the row
-             * @param  {String} field Field name to show
-             * @return {String}       Value to show
-             */
-            getValue: function getValue(row, field) {
-                return StandardTableUtilities.getValue(row, field);
-            },
-
-
-            /**
-             * Is field the current sorting field?
-             * @param  {Object}  column Column to check
-             * @return {Boolean}        TRUE = Yes, it is; FALSE = No, it's not
-             */
-            isActiveSort: function isActiveSort(column) {
-                return column.field === $scope.sort.field;
-            },
-
-
-            isThereColumnsWithFilter: function isThereColumnsWithFilter() {
-                var columsWithFilter = $filter('filter')($scope.columns, function (column) {
-                    return !angular.isUndefined(column.filter);
-                });
-                return angular.isArray(columsWithFilter) && columsWithFilter.length > 0;
-            },
-
-            isThereButtonsToShow: function isThereButtonsToShow() {
-                return $scope.showExport || $scope.showFilter || $transclude.isSlotFilled('buttons');
-            },
-
-            /**
-             * Is there data to show?
-             * @return {Boolean} TRUE if the tableData from the scope is empty or has 0 items, otherwise FALSE
-             */
-            noData: function noData() {
-                return !$scope.tableData || !$scope.tableData.length;
-            }
-        });
-
-        // Order by first column
-        if (!$scope.disableOrder) {
-            vm.changeOrder($scope.columns[0]);
-        }
-    }
-})();
-
-/***/ }),
-/* 10 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-(function () {
-    'use strict';
-
-    module.exports = function (ngModule) {
-        ngModule.directive('standardTableNoData', noDataDirective);
-    };
-
-    function noDataDirective() {
-        return {
-            restrict: 'E',
-            scope: {
-                titleTranslateKey: '=?',
-                bodyTranslateKey: '=?',
-                bodyTranslateValues: '=?'
-            },
-            templateUrl: '/src/standard-table/no-data.html'
-        };
-    }
-})();
-
-/***/ }),
-/* 11 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-(function () {
-    'use strict';
-
-    module.exports = function (ngModule) {
-        ngModule.directive('standardTableExportButton', standardTableExportButtonDirective);
-    };
-
-    function standardTableExportButtonDirective() {
-        return {
-            restrict: 'E',
-            scope: true,
-            templateUrl: '/src/standard-table/export-button.html',
-            controller: ['$scope', StandardTableExportButtonController],
-            controllerAs: 'vm'
-        };
-    }
-
-    function StandardTableExportButtonController($scope) {
-        var vm = this;
-
-        /**
-         * Get an array with the headers
-         * @return {String[]} Array with the headers
-         */
-        vm.headers = function () {
-            var headers = [];
-            for (var i = 0; i < $scope.columns.length; i++) {
-                headers.push($scope.columns[i].title);
-            }
-            return headers;
-        };
-    }
-})();
-
-/***/ }),
-/* 12 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-(function () {
-    'use strict';
-
-    module.exports = function (ngModule) {
-        ngModule.directive('standardTableFilterField', standardTableFilterFieldDirective);
-    };
-
-    function standardTableFilterFieldDirective() {
-        return {
-            restrict: 'E',
-            scope: {
-                filterData: '=filter'
-            },
-            templateUrl: '/src/standard-table/filter-field.html',
-            controller: ['$scope', StandardTableFilterFieldController],
-            controllerAs: 'vm'
-        };
-    }
-
-    function StandardTableFilterFieldController($scope) {
-        if (!$scope.filterData) {
-            $scope.filterData = {
-                textFilter: ''
-            };
-        } else if (angular.isString($scope.filterData)) {
-            $scope.filterData = {
-                textFilter: $scope.filterData
-            };
-        }
-    }
-})();
-
-/***/ }),
-/* 13 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-(function () {
-    'use strict';
-
-    module.exports = function (ngModule) {
-        ngModule.directive('actionButtons', [actionButtons]);
-    };
-
-    /**
-     * Action Buttons Directive
-     * @return {Object} Directive configuration object for <action-buttons> directive
-     */
-    function actionButtons() {
-        return {
-            restrict: 'E',
-            scope: {
-                actions: '=',
-                rowData: '='
-            },
-            templateUrl: '/src/standard-table/action-buttons.html'
-        };
-    }
-})();
-
-/***/ }),
+/* 7 */,
+/* 8 */,
+/* 9 */,
+/* 10 */,
+/* 11 */,
+/* 12 */,
+/* 13 */,
 /* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -45665,6 +45287,391 @@ angular.module('angular.filter', [
   'a8m.filter-watcher'
 ]);
 })( window, window.angular );
+
+/***/ }),
+/* 20 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+(function () {
+    'use strict';
+
+    module.exports = function (ngTablesDirectives) {
+        __webpack_require__(21)(ngTablesDirectives);
+        __webpack_require__(22)(ngTablesDirectives);
+        __webpack_require__(23)(ngTablesDirectives);
+        __webpack_require__(24)(ngTablesDirectives);
+        __webpack_require__(25)(ngTablesDirectives);
+        __webpack_require__(26)(ngTablesDirectives);
+    };
+})();
+
+/***/ }),
+/* 21 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+(function () {
+    'use strict';
+
+    module.exports = function (ngModule) {
+        ngModule.service('StandardTableUtilities', StandardTableUtilities);
+    };
+
+    function StandardTableUtilities() {
+        var StandardTableUtilities = this;
+
+        StandardTableUtilities = {
+            /**
+             * Get the value to show for a row and a field name
+             * @param  {Object} row       Data onject for the row
+             * @param  {String} field     Field name to show
+             * @param  {String} separator [Optional] Separator for arrays
+             * @return {String}           Value to show
+             */
+            getValue: function getValue(row, field) {
+                var separator = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '<br/>';
+
+                if (angular.isObject(row) && angular.isString(field)) {
+                    var dotIndex = field.indexOf('.');
+                    if (dotIndex !== -1) {
+                        return this.getValue(row[field.substr(0, dotIndex)], field.substr(dotIndex + 1));
+                    } else {
+                        // If the result is a fuction -> run it
+                        var value = angular.isFunction(row[field]) ? row[field]() : row[field];
+                        // If the result is an array -> join it
+                        value = angular.isArray(value) ? value.join(separator) : value;
+                        return value;
+                    }
+                } else {
+                    return '';
+                }
+            }
+        };
+
+        return StandardTableUtilities;
+    }
+})();
+
+/***/ }),
+/* 22 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+(function () {
+    'use strict';
+
+    module.exports = function (ngModule) {
+        ngModule.directive('standardTable', standardTableDirective);
+    };
+
+    /**
+     * Standard Table Directive
+     * @return {Object} Directive configuration object for <standard-table> directive
+     */
+    function standardTableDirective() {
+        return {
+            restrict: 'E',
+            transclude: {
+                'buttons': '?standardTableButtons'
+            },
+            scope: {
+                tableData: '=',
+                columns: '=',
+                actions: '=?',
+                admin: '=?',
+                showFilter: '=?',
+                filterData: '=?filter',
+                disableOrder: '=?',
+                sort: '=?',
+                notFound: '=?',
+                showExport: '=?'
+            },
+            templateUrl: '/src/standardTable/standard-table.html',
+            controller: ['$scope', '$filter', '$transclude', 'StandardTableUtilities', StandardTableController],
+            controllerAs: 'vm'
+        };
+    }
+
+    function StandardTableController($scope, $filter, $transclude, StandardTableUtilities) {
+        var vm = this;
+
+        $scope.filterData = $scope.filterData || {};
+        $scope.showExport = $scope.showExport === undefined ? true : $scope.showExport;
+        $scope.sort = angular.extend({
+            field: '',
+            reverse: false
+        }, $scope.sort);
+
+        angular.extend(vm, {
+
+            /**
+             * Change sort order to the given 'fildName'
+             * @param  {Object} column Selected column for new ordering
+             */
+            changeOrder: function changeOrder(column) {
+                // If is the active sort => reverse order
+                if (vm.isActiveSort(column)) {
+                    $scope.sort.reverse = !$scope.sort.reverse;
+                }
+                // Change the sorting field to column.field on ascending order
+                else {
+                        $scope.sort.field = column.field;
+                        $scope.sort.reverse = false;
+                    }
+            },
+
+
+            /**
+             * Get the classes to show if the current field is ordered on ascending or descending mode
+             * @param  {Object} column Column to check
+             * @return {String}        Class or classes for showing the ordenation mode
+             */
+            chevronClassesFor: function chevronClassesFor(column) {
+                return vm.isActiveSort(column) ? $scope.sort.reverse ? 'fa fa-fw fa-sort-desc' : 'fa fa-fw fa-sort-asc' : '';
+            },
+
+
+            /**
+             * Get the value for the order row
+             * @param  {Object} row     Row Data
+             * @param  {Object} columns Columns config
+             * @return {String}         Value to display
+             */
+            getOrderValue: function getOrderValue(row) {
+                return angular.isFunction(row[$scope.sort.field]) ? row[$scope.sort.field]() : row[$scope.sort.field];
+            },
+
+
+            /**
+             * Get a colection with unique values for the column
+             * @param  {Object} column Column config
+             * @return {String[]}      Array
+             */
+            getUniqueColumnValues: function getUniqueColumnValues(column) {
+                var _this = this;
+
+                var uniqueColumnValues = [];
+
+                angular.forEach($scope.tableData, function (row) {
+                    var newValue = _this.getValue(row, column.field);
+                    if (uniqueColumnValues.indexOf(newValue) === -1) {
+                        uniqueColumnValues.push(newValue);
+                    }
+                });
+
+                // Order alphabetichaly;
+                uniqueColumnValues.sort();
+
+                return uniqueColumnValues;
+            },
+
+
+            /**
+             * Get the class set for a row and columb
+             * @param  {Object} row    Row Data
+             * @param  {Object} column Column config
+             * @return {String}        Class value to display
+             */
+            getClass: function getClass(row, column) {
+                var classes = '';
+                classes += column.class || '';
+                classes += this.getValue(row, column.ngClass);
+                classes += angular.isFunction(column.onClick) ? ' clickable' : '';
+                return classes;
+            },
+
+
+            /**
+             * Get the value to show for a row and a field name
+             * @param  {Object} row   Data onject for the row
+             * @param  {String} field Field name to show
+             * @return {String}       Value to show
+             */
+            getValue: function getValue(row, field) {
+                return StandardTableUtilities.getValue(row, field);
+            },
+
+
+            /**
+             * Is field the current sorting field?
+             * @param  {Object}  column Column to check
+             * @return {Boolean}        TRUE = Yes, it is; FALSE = No, it's not
+             */
+            isActiveSort: function isActiveSort(column) {
+                return column.field === $scope.sort.field;
+            },
+
+
+            isThereColumnsWithFilter: function isThereColumnsWithFilter() {
+                var columsWithFilter = $filter('filter')($scope.columns, function (column) {
+                    return !angular.isUndefined(column.filter);
+                });
+                return angular.isArray(columsWithFilter) && columsWithFilter.length > 0;
+            },
+
+            isThereButtonsToShow: function isThereButtonsToShow() {
+                return $scope.showExport || $scope.showFilter || $transclude.isSlotFilled('buttons');
+            },
+
+            /**
+             * Is there data to show?
+             * @return {Boolean} TRUE if the tableData from the scope is empty or has 0 items, otherwise FALSE
+             */
+            noData: function noData() {
+                return !$scope.tableData || !$scope.tableData.length;
+            }
+        });
+
+        // Order by first column
+        if (!$scope.disableOrder) {
+            vm.changeOrder($scope.columns[0]);
+        }
+    }
+})();
+
+/***/ }),
+/* 23 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+(function () {
+    'use strict';
+
+    module.exports = function (ngModule) {
+        ngModule.directive('standardTableNoData', noDataDirective);
+    };
+
+    function noDataDirective() {
+        return {
+            restrict: 'E',
+            scope: {
+                titleTranslateKey: '=?',
+                bodyTranslateKey: '=?',
+                bodyTranslateValues: '=?'
+            },
+            templateUrl: '/src/standardTable/no-data.html'
+        };
+    }
+})();
+
+/***/ }),
+/* 24 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+(function () {
+    'use strict';
+
+    module.exports = function (ngModule) {
+        ngModule.directive('standardTableExportButton', standardTableExportButtonDirective);
+    };
+
+    function standardTableExportButtonDirective() {
+        return {
+            restrict: 'E',
+            scope: true,
+            templateUrl: '/src/standardTable/export-button.html',
+            controller: ['$scope', StandardTableExportButtonController],
+            controllerAs: 'vm'
+        };
+    }
+
+    function StandardTableExportButtonController($scope) {
+        var vm = this;
+
+        /**
+         * Get an array with the headers
+         * @return {String[]} Array with the headers
+         */
+        vm.headers = function () {
+            var headers = [];
+            for (var i = 0; i < $scope.columns.length; i++) {
+                headers.push($scope.columns[i].title);
+            }
+            return headers;
+        };
+    }
+})();
+
+/***/ }),
+/* 25 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+(function () {
+    'use strict';
+
+    module.exports = function (ngModule) {
+        ngModule.directive('standardTableFilterField', standardTableFilterFieldDirective);
+    };
+
+    function standardTableFilterFieldDirective() {
+        return {
+            restrict: 'E',
+            scope: {
+                filterData: '=filter'
+            },
+            templateUrl: '/src/standardTable/filter-field.html',
+            controller: ['$scope', StandardTableFilterFieldController],
+            controllerAs: 'vm'
+        };
+    }
+
+    function StandardTableFilterFieldController($scope) {
+        if (!$scope.filterData) {
+            $scope.filterData = {
+                textFilter: ''
+            };
+        } else if (angular.isString($scope.filterData)) {
+            $scope.filterData = {
+                textFilter: $scope.filterData
+            };
+        }
+    }
+})();
+
+/***/ }),
+/* 26 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+(function () {
+    'use strict';
+
+    module.exports = function (ngModule) {
+        ngModule.directive('actionButtons', [actionButtons]);
+    };
+
+    /**
+     * Action Buttons Directive
+     * @return {Object} Directive configuration object for <action-buttons> directive
+     */
+    function actionButtons() {
+        return {
+            restrict: 'E',
+            scope: {
+                actions: '=',
+                rowData: '='
+            },
+            templateUrl: '/src/standardTable/action-buttons.html'
+        };
+    }
+})();
 
 /***/ })
 /******/ ]);

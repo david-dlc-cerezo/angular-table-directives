@@ -27,7 +27,7 @@
                 notFound: '=?',
                 showExport: '=?'
             },
-            templateUrl: '/src/standard-table/standard-table.html',
+            templateUrl: '/src/standardTable/standard-table.html',
             controller: [
                 '$scope',
                 '$filter',

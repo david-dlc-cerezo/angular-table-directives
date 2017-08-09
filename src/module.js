@@ -8,7 +8,7 @@
         'angular.filter'
     ]);
 
-    require('./standard-table')(ngTablesDirectives);
+    require('./standardTable')(ngTablesDirectives);
     require('./groupTables')(ngTablesDirectives);
     require('./filters')(ngTablesDirectives);
 })();

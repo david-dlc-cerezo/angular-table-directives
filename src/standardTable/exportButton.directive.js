@@ -9,7 +9,7 @@
         return {
             restrict: 'E',
             scope: true,
-            templateUrl: '/src/standard-table/export-button.html',
+            templateUrl: '/src/standardTable/export-button.html',
             controller: [
                 '$scope',
                 StandardTableExportButtonController

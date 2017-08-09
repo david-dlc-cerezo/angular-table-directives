@@ -18,7 +18,7 @@
                 actions: '=',
                 rowData: '='
             },
-            templateUrl: '/src/standard-table/action-buttons.html'
+            templateUrl: '/src/standardTable/action-buttons.html'
         };
     }
 })();
