@@ -1,7 +1,7 @@
 <standard-table-no-data ng-if="vm.noData()"></standard-table-no-data>
 <div ng-if="!vm.noData()" class="container-fluid">
     <div class="panel panel-default">
-        <div class="panel-heading">
+        <div class="panel-heading" ng-if="vm.isThereButtonsToShow()">
             <div class="row">
                 <div class="col-xs-12 col-md-6">
                     <standard-table-export-button ng-if="showExport"></standard-table-export-button>

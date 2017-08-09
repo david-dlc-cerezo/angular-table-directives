@@ -42687,12 +42687,12 @@ angular.module('ui.bootstrap.typeahead').run(function() {!angular.$$csp().noInli
                 showExport: '=?'
             },
             templateUrl: '/src/standard-table/standard-table.html',
-            controller: ['$scope', '$filter', 'StandardTableUtilities', StandardTableController],
+            controller: ['$scope', '$filter', '$transclude', 'StandardTableUtilities', StandardTableController],
             controllerAs: 'vm'
         };
     }
 
-    function StandardTableController($scope, $filter, StandardTableUtilities) {
+    function StandardTableController($scope, $filter, $transclude, StandardTableUtilities) {
         var vm = this;
 
         $scope.filterData = $scope.filterData || {};
@@ -42807,6 +42807,10 @@ angular.module('ui.bootstrap.typeahead').run(function() {!angular.$$csp().noInli
                     return !angular.isUndefined(column.filter);
                 });
                 return angular.isArray(columsWithFilter) && columsWithFilter.length > 0;
+            },
+
+            isThereButtonsToShow: function isThereButtonsToShow() {
+                return $scope.showExport || $scope.showFilter || $transclude.isSlotFilled('buttons');
             },
 
             /**

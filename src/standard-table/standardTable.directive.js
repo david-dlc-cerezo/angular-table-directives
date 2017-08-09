@@ -31,6 +31,7 @@
             controller: [
                 '$scope',
                 '$filter',
+                '$transclude',
                 'StandardTableUtilities',
                 StandardTableController
             ],
@@ -38,7 +39,7 @@
         };
     }
 
-    function StandardTableController($scope, $filter, StandardTableUtilities) {
+    function StandardTableController($scope, $filter, $transclude, StandardTableUtilities) {
         var vm = this;
 
         $scope.filterData = $scope.filterData || {};
@@ -132,7 +133,7 @@
             getValue(row, field) {
                 return StandardTableUtilities.getValue(row, field);
             },
-            
+
             /**
              * Is field the current sorting field?
              * @param  {Object}  column Column to check
@@ -148,6 +149,8 @@
                 });
                 return (angular.isArray(columsWithFilter) && columsWithFilter.length > 0);
             },
+
+            isThereButtonsToShow: () => ($scope.showExport || $scope.showFilter || $transclude.isSlotFilled('buttons')),
 
             /**
              * Is there data to show?
