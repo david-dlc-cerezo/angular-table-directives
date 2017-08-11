@@ -1,8 +1,6 @@
 (function() {
     'use strict';
 
-    const path = require('path');
-
     module.exports = function(ngModule) {
         ngModule.directive('dynamicTable', dynamicTableDirective);
     };
@@ -28,7 +26,7 @@
                 notFound: '=?',
                 showExport: '=?'
             },
-            templateUrl: path.resolve(__dirname, 'src/dynamicTable/dynamic-table.html'),
+            template: require('html-loader!./dynamic-table.html'),
             controller: [
                 '$scope',
                 DynamicTableCtrl
