@@ -1,8 +1,6 @@
 (function() {
     'use strict';
 
-    const path = require('path');
-
     module.exports = function(ngModule) {
         ngModule.directive('actionButtons', [
             actionButtons
@@ -20,7 +18,7 @@
                 actions: '=',
                 rowData: '='
             },
-            templateUrl: path.resolve(__dirname, 'src/standardTable/action-buttons.html')
+            template: require('html-loader!./action-buttons.html')
         };
     }
 })();
