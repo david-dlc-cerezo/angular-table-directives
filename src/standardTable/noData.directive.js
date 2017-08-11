@@ -1,6 +1,8 @@
 (function(){
     'use strict';
 
+    const path = require('path');
+
     module.exports = function(ngModule) {
         ngModule.directive('standardTableNoData', noDataDirective);
     };
@@ -13,7 +15,7 @@
                 bodyTranslateKey: '=?',
                 bodyTranslateValues: '=?'
             },
-            templateUrl: '/src/standardTable/no-data.html'
+            templateUrl: path.resolve(__dirname, 'src/standardTable/no-data.html')
         };
     }
 })();

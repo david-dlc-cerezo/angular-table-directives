@@ -1,6 +1,8 @@
 (function() {
     'use strict';
 
+    const path = require('path');
+
     module.exports = function(ngModule) {
         ngModule.directive('standardTable', standardTableDirective);
     };
@@ -27,7 +29,7 @@
                 notFound: '=?',
                 showExport: '=?'
             },
-            templateUrl: '/src/standardTable/standard-table.html',
+            templateUrl: path.resolve(__dirname, 'src/standardTable/standard-table.html'),
             controller: [
                 '$scope',
                 '$filter',

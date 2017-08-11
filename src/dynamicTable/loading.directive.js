@@ -1,6 +1,8 @@
 (function(){
     'use strict';
 
+    const path = require('path');
+
     module.exports = function(ngModule) {
         ngModule.directive('dynamicTableLoading', loadingDirective);
     };
@@ -8,7 +10,7 @@
     function loadingDirective() {
         return {
             restrict: 'E',
-            templateUrl: '/src/dynamicTable/loading.html'
+            templateUrl: path.resolve(__dirname, 'src/dynamicTable/loading.html')
         };
     }
 })();

@@ -60,11 +60,242 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 0);
+/******/ 	return __webpack_require__(__webpack_require__.s = 1);
 /******/ })
 /************************************************************************/
 /******/ ([
 /* 0 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/* WEBPACK VAR INJECTION */(function(process) {// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+// resolves . and .. elements in a path array with directory names there
+// must be no slashes, empty elements, or device names (c:\) in the array
+// (so also no leading and trailing slashes - it does not distinguish
+// relative and absolute paths)
+function normalizeArray(parts, allowAboveRoot) {
+  // if the path tries to go above the root, `up` ends up > 0
+  var up = 0;
+  for (var i = parts.length - 1; i >= 0; i--) {
+    var last = parts[i];
+    if (last === '.') {
+      parts.splice(i, 1);
+    } else if (last === '..') {
+      parts.splice(i, 1);
+      up++;
+    } else if (up) {
+      parts.splice(i, 1);
+      up--;
+    }
+  }
+
+  // if the path is allowed to go above the root, restore leading ..s
+  if (allowAboveRoot) {
+    for (; up--; up) {
+      parts.unshift('..');
+    }
+  }
+
+  return parts;
+}
+
+// Split a filename into [root, dir, basename, ext], unix version
+// 'root' is just a slash, or nothing.
+var splitPathRe =
+    /^(\/?|)([\s\S]*?)((?:\.{1,2}|[^\/]+?|)(\.[^.\/]*|))(?:[\/]*)$/;
+var splitPath = function(filename) {
+  return splitPathRe.exec(filename).slice(1);
+};
+
+// path.resolve([from ...], to)
+// posix version
+exports.resolve = function() {
+  var resolvedPath = '',
+      resolvedAbsolute = false;
+
+  for (var i = arguments.length - 1; i >= -1 && !resolvedAbsolute; i--) {
+    var path = (i >= 0) ? arguments[i] : process.cwd();
+
+    // Skip empty and invalid entries
+    if (typeof path !== 'string') {
+      throw new TypeError('Arguments to path.resolve must be strings');
+    } else if (!path) {
+      continue;
+    }
+
+    resolvedPath = path + '/' + resolvedPath;
+    resolvedAbsolute = path.charAt(0) === '/';
+  }
+
+  // At this point the path should be resolved to a full absolute path, but
+  // handle relative paths to be safe (might happen when process.cwd() fails)
+
+  // Normalize the path
+  resolvedPath = normalizeArray(filter(resolvedPath.split('/'), function(p) {
+    return !!p;
+  }), !resolvedAbsolute).join('/');
+
+  return ((resolvedAbsolute ? '/' : '') + resolvedPath) || '.';
+};
+
+// path.normalize(path)
+// posix version
+exports.normalize = function(path) {
+  var isAbsolute = exports.isAbsolute(path),
+      trailingSlash = substr(path, -1) === '/';
+
+  // Normalize the path
+  path = normalizeArray(filter(path.split('/'), function(p) {
+    return !!p;
+  }), !isAbsolute).join('/');
+
+  if (!path && !isAbsolute) {
+    path = '.';
+  }
+  if (path && trailingSlash) {
+    path += '/';
+  }
+
+  return (isAbsolute ? '/' : '') + path;
+};
+
+// posix version
+exports.isAbsolute = function(path) {
+  return path.charAt(0) === '/';
+};
+
+// posix version
+exports.join = function() {
+  var paths = Array.prototype.slice.call(arguments, 0);
+  return exports.normalize(filter(paths, function(p, index) {
+    if (typeof p !== 'string') {
+      throw new TypeError('Arguments to path.join must be strings');
+    }
+    return p;
+  }).join('/'));
+};
+
+
+// path.relative(from, to)
+// posix version
+exports.relative = function(from, to) {
+  from = exports.resolve(from).substr(1);
+  to = exports.resolve(to).substr(1);
+
+  function trim(arr) {
+    var start = 0;
+    for (; start < arr.length; start++) {
+      if (arr[start] !== '') break;
+    }
+
+    var end = arr.length - 1;
+    for (; end >= 0; end--) {
+      if (arr[end] !== '') break;
+    }
+
+    if (start > end) return [];
+    return arr.slice(start, end - start + 1);
+  }
+
+  var fromParts = trim(from.split('/'));
+  var toParts = trim(to.split('/'));
+
+  var length = Math.min(fromParts.length, toParts.length);
+  var samePartsLength = length;
+  for (var i = 0; i < length; i++) {
+    if (fromParts[i] !== toParts[i]) {
+      samePartsLength = i;
+      break;
+    }
+  }
+
+  var outputParts = [];
+  for (var i = samePartsLength; i < fromParts.length; i++) {
+    outputParts.push('..');
+  }
+
+  outputParts = outputParts.concat(toParts.slice(samePartsLength));
+
+  return outputParts.join('/');
+};
+
+exports.sep = '/';
+exports.delimiter = ':';
+
+exports.dirname = function(path) {
+  var result = splitPath(path),
+      root = result[0],
+      dir = result[1];
+
+  if (!root && !dir) {
+    // No dirname whatsoever
+    return '.';
+  }
+
+  if (dir) {
+    // It has a dirname, strip trailing slash
+    dir = dir.substr(0, dir.length - 1);
+  }
+
+  return root + dir;
+};
+
+
+exports.basename = function(path, ext) {
+  var f = splitPath(path)[2];
+  // TODO: make this comparison case-insensitive on windows?
+  if (ext && f.substr(-1 * ext.length) === ext) {
+    f = f.substr(0, f.length - ext.length);
+  }
+  return f;
+};
+
+
+exports.extname = function(path) {
+  return splitPath(path)[3];
+};
+
+function filter (xs, f) {
+    if (xs.filter) return xs.filter(f);
+    var res = [];
+    for (var i = 0; i < xs.length; i++) {
+        if (f(xs[i], i, xs)) res.push(xs[i]);
+    }
+    return res;
+}
+
+// String.prototype.substr - negative index don't work in IE8
+var substr = 'ab'.substr(-1) === 'b'
+    ? function (str, start, len) { return str.substr(start, len) }
+    : function (str, start, len) {
+        if (start < 0) start = str.length + start;
+        return str.substr(start, len);
+    }
+;
+
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(12)))
+
+/***/ }),
+/* 1 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -73,12 +304,12 @@
 (function () {
     'use strict';
 
-    __webpack_require__(1);
     __webpack_require__(2);
     __webpack_require__(3);
-    __webpack_require__(19);
-    __webpack_require__(5);
+    __webpack_require__(4);
     __webpack_require__(6);
+    __webpack_require__(7);
+    __webpack_require__(8);
 
     angular.module('demoApp', ['ngTablesDirectives']).controller('demoController', ['$http', '$q', DemoController]);
 
@@ -129,7 +360,7 @@
 })();
 
 /***/ }),
-/* 1 */
+/* 2 */
 /***/ (function(module, exports) {
 
 /**
@@ -33965,7 +34196,7 @@ $provide.value("$locale", {
 !window.angular.$$csp().noInlineStyle && window.angular.element(document.head).prepend('<style type="text/css">@charset "UTF-8";[ng\\:cloak],[ng-cloak],[data-ng-cloak],[x-ng-cloak],.ng-cloak,.x-ng-cloak,.ng-hide:not(.ng-hide-animate){display:none !important;}ng\\:form{display:block;}.ng-animate-shim{visibility:hidden;}.ng-anchor{position:absolute;}</style>');
 
 /***/ }),
-/* 2 */
+/* 3 */
 /***/ (function(module, exports) {
 
 /**
@@ -34777,15 +35008,15 @@ angular.module('ngSanitize').filter('linky', ['$sanitize', function($sanitize) {
 
 
 /***/ }),
-/* 3 */
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
-__webpack_require__(4);
+__webpack_require__(5);
 module.exports = 'ui.bootstrap';
 
 
 /***/ }),
-/* 4 */
+/* 5 */
 /***/ (function(module, exports) {
 
 /*
@@ -42566,367 +42797,7 @@ angular.module('ui.bootstrap.timepicker').run(function() {!angular.$$csp().noInl
 angular.module('ui.bootstrap.typeahead').run(function() {!angular.$$csp().noInlineStyle && !angular.$$uibTypeaheadCss && angular.element(document).find('head').prepend('<style type="text/css">[uib-typeahead-popup].dropdown-menu{display:block;}</style>'); angular.$$uibTypeaheadCss = true; });
 
 /***/ }),
-/* 5 */
-/***/ (function(module, exports) {
-
-/*! ng-csv 10-10-2015 */
-!function(a){angular.module("ngCsv.config",[]).value("ngCsv.config",{debug:!0}).config(["$compileProvider",function(a){angular.isDefined(a.urlSanitizationWhitelist)?a.urlSanitizationWhitelist(/^\s*(https?|ftp|mailto|file|data):/):a.aHrefSanitizationWhitelist(/^\s*(https?|ftp|mailto|file|data):/)}]),angular.module("ngCsv.directives",["ngCsv.services"]),angular.module("ngCsv.services",[]),angular.module("ngCsv",["ngCsv.config","ngCsv.services","ngCsv.directives","ngSanitize"]),"undefined"!=typeof module&&"undefined"!=typeof exports&&module.exports===exports&&(module.exports="ngCsv"),angular.module("ngCsv.services").service("CSV",["$q",function(a){var b="\r\n",c="﻿",d={"\\t":"	","\\b":"\b","\\v":"","\\f":"\f","\\r":"\r"};this.stringifyField=function(a,b){return"locale"===b.decimalSep&&this.isFloat(a)?a.toLocaleString():"."!==b.decimalSep&&this.isFloat(a)?a.toString().replace(".",b.decimalSep):"string"==typeof a?(a=a.replace(/"/g,'""'),(b.quoteStrings||a.indexOf(",")>-1||a.indexOf("\n")>-1||a.indexOf("\r")>-1)&&(a=b.txtDelim+a+b.txtDelim),a):"boolean"==typeof a?a?"TRUE":"FALSE":a},this.isFloat=function(a){return+a===a&&(!isFinite(a)||Boolean(a%1))},this.stringify=function(d,e){var f=a.defer(),g=this,h="",i="",j=a.when(d).then(function(a){if(angular.isDefined(e.header)&&e.header){var d,j;d=[],angular.forEach(e.header,function(a){this.push(g.stringifyField(a,e))},d),j=d.join(e.fieldSep?e.fieldSep:","),i+=j+b}var k=[];if(angular.isArray(a)?k=a:angular.isFunction(a)&&(k=a()),angular.isDefined(e.label)&&e.label&&"boolean"==typeof e.label){var l,m;l=[],angular.forEach(k[0],function(a,b){this.push(g.stringifyField(b,e))},l),m=l.join(e.fieldSep?e.fieldSep:","),i+=m+b}angular.forEach(k,function(a,c){var d,f,h=angular.copy(k[c]);f=[];var j=e.columnOrder?e.columnOrder:h;angular.forEach(j,function(a){var b=e.columnOrder?h[a]:a;this.push(g.stringifyField(b,e))},f),d=f.join(e.fieldSep?e.fieldSep:","),i+=c<k.length?d+b:d}),e.addByteOrderMarker&&(h+=c),h+=i,f.resolve(h)});return"function"==typeof j["catch"]&&j["catch"](function(a){f.reject(a)}),f.promise},this.isSpecialChar=function(a){return void 0!==d[a]},this.getSpecialChar=function(a){return d[a]}}]),angular.module("ngCsv.directives").directive("ngCsv",["$parse","$q","CSV","$document","$timeout",function(b,c,d,e,f){return{restrict:"AC",scope:{data:"&ngCsv",filename:"@filename",header:"&csvHeader",columnOrder:"&csvColumnOrder",txtDelim:"@textDelimiter",decimalSep:"@decimalSeparator",quoteStrings:"@quoteStrings",fieldSep:"@fieldSeparator",lazyLoad:"@lazyLoad",addByteOrderMarker:"@addBom",ngClick:"&",charset:"@charset",label:"&csvLabel"},controller:["$scope","$element","$attrs","$transclude",function(a,b,e){function f(){var b={txtDelim:a.txtDelim?a.txtDelim:'"',decimalSep:a.decimalSep?a.decimalSep:".",quoteStrings:a.quoteStrings,addByteOrderMarker:a.addByteOrderMarker};return angular.isDefined(e.csvHeader)&&(b.header=a.$eval(a.header)),angular.isDefined(e.csvColumnOrder)&&(b.columnOrder=a.$eval(a.columnOrder)),angular.isDefined(e.csvLabel)&&(b.label=a.$eval(a.label)),b.fieldSep=a.fieldSep?a.fieldSep:",",b.fieldSep=d.isSpecialChar(b.fieldSep)?d.getSpecialChar(b.fieldSep):b.fieldSep,b}a.csv="",angular.isDefined(a.lazyLoad)&&"true"==a.lazyLoad||angular.isArray(a.data)&&a.$watch("data",function(){a.buildCSV()},!0),a.getFilename=function(){return a.filename||"download.csv"},a.buildCSV=function(){var g=c.defer();return b.addClass(e.ngCsvLoadingClass||"ng-csv-loading"),d.stringify(a.data(),f()).then(function(c){a.csv=c,b.removeClass(e.ngCsvLoadingClass||"ng-csv-loading"),g.resolve(c)}),a.$apply(),g.promise}}],link:function(b,c){function d(){var c=b.charset||"utf-8",d=new Blob([b.csv],{type:"text/csv;charset="+c+";"});if(a.navigator.msSaveOrOpenBlob)navigator.msSaveBlob(d,b.getFilename());else{var g=angular.element('<div data-tap-disabled="true"><a></a></div>'),h=angular.element(g.children()[0]);h.attr("href",a.URL.createObjectURL(d)),h.attr("download",b.getFilename()),h.attr("target","_blank"),e.find("body").append(g),f(function(){h[0].click(),h.remove()},null)}}c.bind("click",function(){b.buildCSV().then(function(){d()}),b.$apply()})}}}])}(window,document);
-
-/***/ }),
 /* 6 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-(function () {
-    'use strict';
-
-    var ngTablesDirectives = angular.module('ngTablesDirectives', ['ngSanitize', 'ngCsv', 'ui.bootstrap', 'angular.filter']);
-
-    __webpack_require__(20)(ngTablesDirectives);
-    __webpack_require__(17)(ngTablesDirectives);
-    __webpack_require__(27)(ngTablesDirectives);
-    __webpack_require__(14)(ngTablesDirectives);
-})();
-
-/***/ }),
-/* 7 */,
-/* 8 */,
-/* 9 */,
-/* 10 */,
-/* 11 */,
-/* 12 */,
-/* 13 */,
-/* 14 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-(function () {
-    'use strict';
-
-    module.exports = function (ngTablesDirectives) {
-        __webpack_require__(15)(ngTablesDirectives);
-        __webpack_require__(16)(ngTablesDirectives);
-    };
-})();
-
-/***/ }),
-/* 15 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-(function () {
-    'use strict';
-
-    module.exports = function (ngModule) {
-        ngModule.filter('filterStandartTable', ['$filter', 'StandardTableUtilities', filterStandartTable]);
-    };
-
-    /**
-     * Does the string contains substring
-     * @param  {Mixed}  value     Value to check
-     * @param  {String} substring Substring to search
-     * @return Boolean            TRUE = yes, FALSE = no
-     */
-    function contains(value, substring) {
-        if (value && substring) {
-            var regexp = new RegExp(substring, 'gi');
-            if (angular.isString(value)) {
-                return value.match(regexp) !== null;
-            } else if (angular.isNumber(value)) {
-                return value.toString().match(regexp) !== null;
-            }
-        } else {
-            return false;
-        }
-    }
-
-    /**
-     * Format Table data as text.
-     */
-    function filterStandartTable($filter, StandardTableUtilities) {
-
-        /**
-         * Is there an active filter for columns?
-         * @param  {Object} filter Filter object
-         * @return {Boolean}       TRUE = yes, FALSE = no
-         */
-        function isThereActiveFilterColums(filter) {
-            var isThereActiveFilterColums = false;
-
-            for (var columnName in filter.columns) {
-                if (filter.columns[columnName]) {
-                    isThereActiveFilterColums = true;
-                    break;
-                }
-            }
-
-            return isThereActiveFilterColums;
-        }
-
-        /**
-         * Filter Row By Text
-         * @param  {Object} row               Row to check
-         * @param  {String} textFilter        Text to search
-         * @param  {Object} columnsDefinition Column definition object
-         * @return {Boolean}                  TRUE = pass the filter, FALSE = doesn't pass the filter
-         */
-        function filterRowByText(row, textFilter, columnsDefinition) {
-            for (var i = 0; i < columnsDefinition.length; i++) {
-                var value = StandardTableUtilities.getValue(row, columnsDefinition[i].field);
-                if (value && textFilter && contains(value, textFilter)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        /**
-         * Filter Row By Column Filter
-         * @param  {Object} row               Row to check
-         * @param  {String} columnFilter      Column filter value
-         * @param  {Object} columnsDefinition Column definition object
-         * @return {Boolean}                  TRUE = pass the filter, FALSE = does NOT pass the filter
-         */
-        function filterRowByColumnFilters(row, columnFilter, columnsDefinition) {
-            for (var i = 0; i < columnsDefinition.length; i++) {
-                var column = columnsDefinition[i];
-                var columnFilterValue = columnFilter[column.field];
-                if (columnFilterValue) {
-                    var value = StandardTableUtilities.getValue(row, column.field);
-                    if (!filterValueColumn(value, columnFilterValue, column.filter)) {
-                        return false;
-                    }
-                }
-            }
-            return true;
-        }
-
-        /**
-         * Filter Value By Column Filter
-         * @param  {String} value          Value to check
-         * @param  {String} valueToCompare Value to search
-         * @param  {String} filterType     Filter type
-         * @return {Boolean}                  TRUE = pass the filter, FALSE = does NOT pass the filter
-         */
-        function filterValueColumn(value, valueToCompare, filterType) {
-            var passFilter;
-            if (valueToCompare && filterType) {
-                switch (filterType) {
-                    case 'select':
-                        passFilter = value === valueToCompare;
-                        break;
-                    //case 'text':
-                    default:
-                        passFilter = value && contains(value, valueToCompare);
-                }
-            } else {
-                passFilter = true;
-            }
-            return passFilter;
-        }
-
-        /**
-         * Filter function
-         * @param  {Array}  table             Table to filter
-         * @param  {Object} filter            Filter object
-         * @param  {Object} columnsDefinition Column definition
-         * @return {Array}                    Filtered table
-         */
-        return function (table, filter, columnsDefinition) {
-
-            var outputTable = [];
-            if (table && filter && columnsDefinition) {
-                // Check if there is any column filter to apply
-                var filterColumns = isThereActiveFilterColums(filter);
-
-                // Apply filter to each row
-                angular.forEach(table, function (row) {
-                    var passFilter = true;
-                    if (filter.textFilter || filterColumns) {
-                        // 1. Text filter (any columns)
-                        if (filter.textFilter) {
-                            passFilter = filterRowByText(row, filter.textFilter, columnsDefinition);
-                        }
-                        // 2. column filter
-                        if (passFilter && filterColumns) {
-                            passFilter = passFilter && filterRowByColumnFilters(row, filter.columns, columnsDefinition);
-                        }
-                    }
-
-                    if (passFilter) {
-                        outputTable.push(row);
-                    }
-                });
-            } else {
-                if (table && filter && filter.textFilter) {
-                    outputTable = $filter('filter')(table, filter.textFilter);
-                } else {
-                    //console.warn('To apply "filterStandartTable" filter, you have to pass a table, and a filter and a columnsDefinition objects', table, filter, columnsDefinition);
-                    outputTable = table;
-                }
-            }
-
-            return outputTable;
-        };
-    }
-})();
-
-/***/ }),
-/* 16 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-(function () {
-    'use strict';
-
-    module.exports = function (ngModule) {
-        ngModule.filter('standartTableToCsv', ['$filter', 'StandardTableUtilities', standartTableToCsvFilter]);
-    };
-
-    /**
-     * Convert a Standard table data into a CSV
-     */
-    function standartTableToCsvFilter($filter, StandardTableUtilities) {
-        /**
-         * Filter function
-         * @param  {Array}  table             Table to convert
-         * @param  {Object} columnsDefinition Column definition
-         * @param  {Object} filter            Filter object to apply
-         * @return {Array}                    Filtered table
-         */
-        return function (table, columnsDefinition, filter) {
-
-            // 1. Apply filter (if defined)
-            var filteredTable = [];
-            if (table && filter) {
-                filteredTable = $filter('filterStandartTable')(table, filter, columnsDefinition);
-            } else {
-                filteredTable = table;
-            }
-
-            // 2. Export only the columns on column definition
-            var outputTable = [];
-            if (columnsDefinition) {
-                angular.forEach(filteredTable, function (row) {
-                    var newRow = {};
-                    angular.forEach(columnsDefinition, function (column) {
-                        newRow[column.field] = StandardTableUtilities.getValue(row, column.field, '|');
-                    });
-                    outputTable.push(newRow);
-                });
-            } else {
-                outputTable = filteredTable;
-            }
-
-            return outputTable;
-        };
-    }
-})();
-
-/***/ }),
-/* 17 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-(function () {
-    'use strict';
-
-    module.exports = function (ngTablesDirectives) {
-        __webpack_require__(18)(ngTablesDirectives);
-    };
-})();
-
-/***/ }),
-/* 18 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-(function () {
-    'use strict';
-
-    module.exports = function (ngModule) {
-        ngModule.directive('groupTables', groupTablesDirective);
-    };
-
-    /**
-     * Group Table Directive
-     * @return {Object} Directive configuration object for <group-table> directive
-     */
-    function groupTablesDirective() {
-        return {
-            restrict: 'E',
-            transclude: {
-                'buttons': '?groupTableButtons'
-            },
-            scope: {
-                tableData: '=',
-                groupByField: '@',
-                columns: '=',
-                groupByLabelText: '@?',
-                groupByLabelValue: '@?',
-                reloadEvent: '=?',
-                actions: '=?',
-                admin: '=?',
-                showFilter: '=?',
-                filterData: '=?filter',
-                disableOrder: '=?',
-                sort: '=?',
-                notFound: '=?',
-                showExport: '=?'
-            },
-            templateUrl: '/src/groupTables/group-tables.html',
-            controller: ['$scope', GroupTablesCtrl],
-            controllerAs: 'vm'
-        };
-    }
-
-    function GroupTablesCtrl($scope) {
-        var vm = this;
-
-        $scope.filterData = $scope.filterData || {};
-
-        // Before continue check if 'tableData' and 'groupBy' are defined
-        if (!$scope.groupByField) {
-            console.error('GroupTables: groupByField not defined', $scope.groupByField);
-        }
-
-        $scope.showExport = $scope.showExport === undefined ? true : $scope.showExport;
-
-        /**
-         * Obtain the value to show as header of the group
-         * @param  {String} groupValue [description]
-         * @param  {Object} groupData  [description]
-         * @return {String}            Value to show as a header of the group
-         */
-        vm.getGroupByValue = function (groupValue, groupData) {
-            var value;
-            if ($scope.groupByLabelValue) {
-                value = groupData[0][$scope.groupByLabelValue];
-                if (angular.isFunction(value)) {
-                    value = groupData[0][$scope.groupByLabelValue]();
-                }
-            } else {
-                value = groupValue;
-            }
-            return value;
-        };
-    }
-})();
-
-/***/ }),
-/* 19 */
 /***/ (function(module, exports) {
 
 /**
@@ -45298,7 +45169,32 @@ angular.module('angular.filter', [
 })( window, window.angular );
 
 /***/ }),
-/* 20 */
+/* 7 */
+/***/ (function(module, exports) {
+
+/*! ng-csv 10-10-2015 */
+!function(a){angular.module("ngCsv.config",[]).value("ngCsv.config",{debug:!0}).config(["$compileProvider",function(a){angular.isDefined(a.urlSanitizationWhitelist)?a.urlSanitizationWhitelist(/^\s*(https?|ftp|mailto|file|data):/):a.aHrefSanitizationWhitelist(/^\s*(https?|ftp|mailto|file|data):/)}]),angular.module("ngCsv.directives",["ngCsv.services"]),angular.module("ngCsv.services",[]),angular.module("ngCsv",["ngCsv.config","ngCsv.services","ngCsv.directives","ngSanitize"]),"undefined"!=typeof module&&"undefined"!=typeof exports&&module.exports===exports&&(module.exports="ngCsv"),angular.module("ngCsv.services").service("CSV",["$q",function(a){var b="\r\n",c="﻿",d={"\\t":"	","\\b":"\b","\\v":"","\\f":"\f","\\r":"\r"};this.stringifyField=function(a,b){return"locale"===b.decimalSep&&this.isFloat(a)?a.toLocaleString():"."!==b.decimalSep&&this.isFloat(a)?a.toString().replace(".",b.decimalSep):"string"==typeof a?(a=a.replace(/"/g,'""'),(b.quoteStrings||a.indexOf(",")>-1||a.indexOf("\n")>-1||a.indexOf("\r")>-1)&&(a=b.txtDelim+a+b.txtDelim),a):"boolean"==typeof a?a?"TRUE":"FALSE":a},this.isFloat=function(a){return+a===a&&(!isFinite(a)||Boolean(a%1))},this.stringify=function(d,e){var f=a.defer(),g=this,h="",i="",j=a.when(d).then(function(a){if(angular.isDefined(e.header)&&e.header){var d,j;d=[],angular.forEach(e.header,function(a){this.push(g.stringifyField(a,e))},d),j=d.join(e.fieldSep?e.fieldSep:","),i+=j+b}var k=[];if(angular.isArray(a)?k=a:angular.isFunction(a)&&(k=a()),angular.isDefined(e.label)&&e.label&&"boolean"==typeof e.label){var l,m;l=[],angular.forEach(k[0],function(a,b){this.push(g.stringifyField(b,e))},l),m=l.join(e.fieldSep?e.fieldSep:","),i+=m+b}angular.forEach(k,function(a,c){var d,f,h=angular.copy(k[c]);f=[];var j=e.columnOrder?e.columnOrder:h;angular.forEach(j,function(a){var b=e.columnOrder?h[a]:a;this.push(g.stringifyField(b,e))},f),d=f.join(e.fieldSep?e.fieldSep:","),i+=c<k.length?d+b:d}),e.addByteOrderMarker&&(h+=c),h+=i,f.resolve(h)});return"function"==typeof j["catch"]&&j["catch"](function(a){f.reject(a)}),f.promise},this.isSpecialChar=function(a){return void 0!==d[a]},this.getSpecialChar=function(a){return d[a]}}]),angular.module("ngCsv.directives").directive("ngCsv",["$parse","$q","CSV","$document","$timeout",function(b,c,d,e,f){return{restrict:"AC",scope:{data:"&ngCsv",filename:"@filename",header:"&csvHeader",columnOrder:"&csvColumnOrder",txtDelim:"@textDelimiter",decimalSep:"@decimalSeparator",quoteStrings:"@quoteStrings",fieldSep:"@fieldSeparator",lazyLoad:"@lazyLoad",addByteOrderMarker:"@addBom",ngClick:"&",charset:"@charset",label:"&csvLabel"},controller:["$scope","$element","$attrs","$transclude",function(a,b,e){function f(){var b={txtDelim:a.txtDelim?a.txtDelim:'"',decimalSep:a.decimalSep?a.decimalSep:".",quoteStrings:a.quoteStrings,addByteOrderMarker:a.addByteOrderMarker};return angular.isDefined(e.csvHeader)&&(b.header=a.$eval(a.header)),angular.isDefined(e.csvColumnOrder)&&(b.columnOrder=a.$eval(a.columnOrder)),angular.isDefined(e.csvLabel)&&(b.label=a.$eval(a.label)),b.fieldSep=a.fieldSep?a.fieldSep:",",b.fieldSep=d.isSpecialChar(b.fieldSep)?d.getSpecialChar(b.fieldSep):b.fieldSep,b}a.csv="",angular.isDefined(a.lazyLoad)&&"true"==a.lazyLoad||angular.isArray(a.data)&&a.$watch("data",function(){a.buildCSV()},!0),a.getFilename=function(){return a.filename||"download.csv"},a.buildCSV=function(){var g=c.defer();return b.addClass(e.ngCsvLoadingClass||"ng-csv-loading"),d.stringify(a.data(),f()).then(function(c){a.csv=c,b.removeClass(e.ngCsvLoadingClass||"ng-csv-loading"),g.resolve(c)}),a.$apply(),g.promise}}],link:function(b,c){function d(){var c=b.charset||"utf-8",d=new Blob([b.csv],{type:"text/csv;charset="+c+";"});if(a.navigator.msSaveOrOpenBlob)navigator.msSaveBlob(d,b.getFilename());else{var g=angular.element('<div data-tap-disabled="true"><a></a></div>'),h=angular.element(g.children()[0]);h.attr("href",a.URL.createObjectURL(d)),h.attr("download",b.getFilename()),h.attr("target","_blank"),e.find("body").append(g),f(function(){h[0].click(),h.remove()},null)}}c.bind("click",function(){b.buildCSV().then(function(){d()}),b.$apply()})}}}])}(window,document);
+
+/***/ }),
+/* 8 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+(function () {
+    'use strict';
+
+    var ngTablesDirectives = angular.module('ngTablesDirectives', ['ngSanitize', 'ngCsv', 'ui.bootstrap', 'angular.filter']);
+
+    __webpack_require__(9)(ngTablesDirectives);
+    __webpack_require__(17)(ngTablesDirectives);
+    __webpack_require__(19)(ngTablesDirectives);
+    __webpack_require__(23)(ngTablesDirectives);
+})();
+
+/***/ }),
+/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -45308,17 +45204,17 @@ angular.module('angular.filter', [
     'use strict';
 
     module.exports = function (ngTablesDirectives) {
-        __webpack_require__(21)(ngTablesDirectives);
-        __webpack_require__(22)(ngTablesDirectives);
-        __webpack_require__(23)(ngTablesDirectives);
-        __webpack_require__(24)(ngTablesDirectives);
-        __webpack_require__(25)(ngTablesDirectives);
-        __webpack_require__(26)(ngTablesDirectives);
+        __webpack_require__(10)(ngTablesDirectives);
+        __webpack_require__(11)(ngTablesDirectives);
+        __webpack_require__(13)(ngTablesDirectives);
+        __webpack_require__(14)(ngTablesDirectives);
+        __webpack_require__(15)(ngTablesDirectives);
+        __webpack_require__(16)(ngTablesDirectives);
     };
 })();
 
 /***/ }),
-/* 21 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -45367,14 +45263,16 @@ angular.module('angular.filter', [
 })();
 
 /***/ }),
-/* 22 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-
+/* WEBPACK VAR INJECTION */(function(__dirname) {
 
 (function () {
     'use strict';
+
+    var path = __webpack_require__(0);
 
     module.exports = function (ngModule) {
         ngModule.directive('standardTable', standardTableDirective);
@@ -45402,7 +45300,7 @@ angular.module('angular.filter', [
                 notFound: '=?',
                 showExport: '=?'
             },
-            templateUrl: '/src/standardTable/standard-table.html',
+            templateUrl: path.resolve(__dirname, 'src/standardTable/standard-table.html'),
             controller: ['$scope', '$filter', '$transclude', 'StandardTableUtilities', StandardTableController],
             controllerAs: 'vm'
         };
@@ -45544,16 +45442,209 @@ angular.module('angular.filter', [
         }
     }
 })();
+/* WEBPACK VAR INJECTION */}.call(exports, "/"))
 
 /***/ }),
-/* 23 */
+/* 12 */
+/***/ (function(module, exports) {
+
+// shim for using process in browser
+var process = module.exports = {};
+
+// cached from whatever global is present so that test runners that stub it
+// don't break things.  But we need to wrap it in a try catch in case it is
+// wrapped in strict mode code which doesn't define any globals.  It's inside a
+// function because try/catches deoptimize in certain engines.
+
+var cachedSetTimeout;
+var cachedClearTimeout;
+
+function defaultSetTimout() {
+    throw new Error('setTimeout has not been defined');
+}
+function defaultClearTimeout () {
+    throw new Error('clearTimeout has not been defined');
+}
+(function () {
+    try {
+        if (typeof setTimeout === 'function') {
+            cachedSetTimeout = setTimeout;
+        } else {
+            cachedSetTimeout = defaultSetTimout;
+        }
+    } catch (e) {
+        cachedSetTimeout = defaultSetTimout;
+    }
+    try {
+        if (typeof clearTimeout === 'function') {
+            cachedClearTimeout = clearTimeout;
+        } else {
+            cachedClearTimeout = defaultClearTimeout;
+        }
+    } catch (e) {
+        cachedClearTimeout = defaultClearTimeout;
+    }
+} ())
+function runTimeout(fun) {
+    if (cachedSetTimeout === setTimeout) {
+        //normal enviroments in sane situations
+        return setTimeout(fun, 0);
+    }
+    // if setTimeout wasn't available but was latter defined
+    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
+        cachedSetTimeout = setTimeout;
+        return setTimeout(fun, 0);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedSetTimeout(fun, 0);
+    } catch(e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+            return cachedSetTimeout.call(null, fun, 0);
+        } catch(e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+            return cachedSetTimeout.call(this, fun, 0);
+        }
+    }
+
+
+}
+function runClearTimeout(marker) {
+    if (cachedClearTimeout === clearTimeout) {
+        //normal enviroments in sane situations
+        return clearTimeout(marker);
+    }
+    // if clearTimeout wasn't available but was latter defined
+    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
+        cachedClearTimeout = clearTimeout;
+        return clearTimeout(marker);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedClearTimeout(marker);
+    } catch (e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+            return cachedClearTimeout.call(null, marker);
+        } catch (e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+            return cachedClearTimeout.call(this, marker);
+        }
+    }
+
+
+
+}
+var queue = [];
+var draining = false;
+var currentQueue;
+var queueIndex = -1;
+
+function cleanUpNextTick() {
+    if (!draining || !currentQueue) {
+        return;
+    }
+    draining = false;
+    if (currentQueue.length) {
+        queue = currentQueue.concat(queue);
+    } else {
+        queueIndex = -1;
+    }
+    if (queue.length) {
+        drainQueue();
+    }
+}
+
+function drainQueue() {
+    if (draining) {
+        return;
+    }
+    var timeout = runTimeout(cleanUpNextTick);
+    draining = true;
+
+    var len = queue.length;
+    while(len) {
+        currentQueue = queue;
+        queue = [];
+        while (++queueIndex < len) {
+            if (currentQueue) {
+                currentQueue[queueIndex].run();
+            }
+        }
+        queueIndex = -1;
+        len = queue.length;
+    }
+    currentQueue = null;
+    draining = false;
+    runClearTimeout(timeout);
+}
+
+process.nextTick = function (fun) {
+    var args = new Array(arguments.length - 1);
+    if (arguments.length > 1) {
+        for (var i = 1; i < arguments.length; i++) {
+            args[i - 1] = arguments[i];
+        }
+    }
+    queue.push(new Item(fun, args));
+    if (queue.length === 1 && !draining) {
+        runTimeout(drainQueue);
+    }
+};
+
+// v8 likes predictible objects
+function Item(fun, array) {
+    this.fun = fun;
+    this.array = array;
+}
+Item.prototype.run = function () {
+    this.fun.apply(null, this.array);
+};
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+process.version = ''; // empty string to avoid regexp issues
+process.versions = {};
+
+function noop() {}
+
+process.on = noop;
+process.addListener = noop;
+process.once = noop;
+process.off = noop;
+process.removeListener = noop;
+process.removeAllListeners = noop;
+process.emit = noop;
+process.prependListener = noop;
+process.prependOnceListener = noop;
+
+process.listeners = function (name) { return [] }
+
+process.binding = function (name) {
+    throw new Error('process.binding is not supported');
+};
+
+process.cwd = function () { return '/' };
+process.chdir = function (dir) {
+    throw new Error('process.chdir is not supported');
+};
+process.umask = function() { return 0; };
+
+
+/***/ }),
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-
+/* WEBPACK VAR INJECTION */(function(__dirname) {
 
 (function () {
     'use strict';
+
+    var path = __webpack_require__(0);
 
     module.exports = function (ngModule) {
         ngModule.directive('standardTableNoData', noDataDirective);
@@ -45567,20 +45658,23 @@ angular.module('angular.filter', [
                 bodyTranslateKey: '=?',
                 bodyTranslateValues: '=?'
             },
-            templateUrl: '/src/standardTable/no-data.html'
+            templateUrl: path.resolve(__dirname, 'src/standardTable/no-data.html')
         };
     }
 })();
+/* WEBPACK VAR INJECTION */}.call(exports, "/"))
 
 /***/ }),
-/* 24 */
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-
+/* WEBPACK VAR INJECTION */(function(__dirname) {
 
 (function () {
     'use strict';
+
+    var path = __webpack_require__(0);
 
     module.exports = function (ngModule) {
         ngModule.directive('standardTableExportButton', standardTableExportButtonDirective);
@@ -45590,7 +45684,7 @@ angular.module('angular.filter', [
         return {
             restrict: 'E',
             scope: true,
-            templateUrl: '/src/standardTable/export-button.html',
+            templateUrl: path.resolve(__dirname, 'src/standardTable/export-button.html'),
             controller: ['$scope', StandardTableExportButtonController],
             controllerAs: 'vm'
         };
@@ -45612,16 +45706,19 @@ angular.module('angular.filter', [
         };
     }
 })();
+/* WEBPACK VAR INJECTION */}.call(exports, "/"))
 
 /***/ }),
-/* 25 */
+/* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-
+/* WEBPACK VAR INJECTION */(function(__dirname) {
 
 (function () {
     'use strict';
+
+    var path = __webpack_require__(0);
 
     module.exports = function (ngModule) {
         ngModule.directive('standardTableFilterField', standardTableFilterFieldDirective);
@@ -45633,7 +45730,7 @@ angular.module('angular.filter', [
             scope: {
                 filterData: '=filter'
             },
-            templateUrl: '/src/standardTable/filter-field.html',
+            templateUrl: path.resolve(__dirname, 'src/standardTable/filter-field.html'),
             controller: ['$scope', StandardTableFilterFieldController],
             controllerAs: 'vm'
         };
@@ -45651,16 +45748,19 @@ angular.module('angular.filter', [
         }
     }
 })();
+/* WEBPACK VAR INJECTION */}.call(exports, "/"))
 
 /***/ }),
-/* 26 */
+/* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-
+/* WEBPACK VAR INJECTION */(function(__dirname) {
 
 (function () {
     'use strict';
+
+    var path = __webpack_require__(0);
 
     module.exports = function (ngModule) {
         ngModule.directive('actionButtons', [actionButtons]);
@@ -45677,13 +45777,14 @@ angular.module('angular.filter', [
                 actions: '=',
                 rowData: '='
             },
-            templateUrl: '/src/standardTable/action-buttons.html'
+            templateUrl: path.resolve(__dirname, 'src/standardTable/action-buttons.html')
         };
     }
 })();
+/* WEBPACK VAR INJECTION */}.call(exports, "/"))
 
 /***/ }),
-/* 27 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -45693,14 +45794,94 @@ angular.module('angular.filter', [
     'use strict';
 
     module.exports = function (ngTablesDirectives) {
-        __webpack_require__(28)(ngTablesDirectives);
-        __webpack_require__(31)(ngTablesDirectives);
-        __webpack_require__(30)(ngTablesDirectives);
+        __webpack_require__(18)(ngTablesDirectives);
     };
 })();
 
 /***/ }),
-/* 28 */
+/* 18 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/* WEBPACK VAR INJECTION */(function(__dirname) {
+
+(function () {
+    'use strict';
+
+    var path = __webpack_require__(0);
+
+    module.exports = function (ngModule) {
+        ngModule.directive('groupTables', groupTablesDirective);
+    };
+
+    /**
+     * Group Table Directive
+     * @return {Object} Directive configuration object for <group-table> directive
+     */
+    function groupTablesDirective() {
+        return {
+            restrict: 'E',
+            transclude: {
+                'buttons': '?groupTableButtons'
+            },
+            scope: {
+                tableData: '=',
+                groupByField: '@',
+                columns: '=',
+                groupByLabelText: '@?',
+                groupByLabelValue: '@?',
+                reloadEvent: '=?',
+                actions: '=?',
+                admin: '=?',
+                showFilter: '=?',
+                filterData: '=?filter',
+                disableOrder: '=?',
+                sort: '=?',
+                notFound: '=?',
+                showExport: '=?'
+            },
+            templateUrl: path.resolve(__dirname, 'src/groupTables/group-tables.html'),
+            controller: ['$scope', GroupTablesCtrl],
+            controllerAs: 'vm'
+        };
+    }
+
+    function GroupTablesCtrl($scope) {
+        var vm = this;
+
+        $scope.filterData = $scope.filterData || {};
+
+        // Before continue check if 'tableData' and 'groupBy' are defined
+        if (!$scope.groupByField) {
+            console.error('GroupTables: groupByField not defined', $scope.groupByField);
+        }
+
+        $scope.showExport = $scope.showExport === undefined ? true : $scope.showExport;
+
+        /**
+         * Obtain the value to show as header of the group
+         * @param  {String} groupValue [description]
+         * @param  {Object} groupData  [description]
+         * @return {String}            Value to show as a header of the group
+         */
+        vm.getGroupByValue = function (groupValue, groupData) {
+            var value;
+            if ($scope.groupByLabelValue) {
+                value = groupData[0][$scope.groupByLabelValue];
+                if (angular.isFunction(value)) {
+                    value = groupData[0][$scope.groupByLabelValue]();
+                }
+            } else {
+                value = groupValue;
+            }
+            return value;
+        };
+    }
+})();
+/* WEBPACK VAR INJECTION */}.call(exports, "/"))
+
+/***/ }),
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -45708,6 +45889,25 @@ angular.module('angular.filter', [
 
 (function () {
     'use strict';
+
+    module.exports = function (ngTablesDirectives) {
+        __webpack_require__(20)(ngTablesDirectives);
+        __webpack_require__(21)(ngTablesDirectives);
+        __webpack_require__(22)(ngTablesDirectives);
+    };
+})();
+
+/***/ }),
+/* 20 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/* WEBPACK VAR INJECTION */(function(__dirname) {
+
+(function () {
+    'use strict';
+
+    var path = __webpack_require__(0);
 
     module.exports = function (ngModule) {
         ngModule.directive('dynamicTable', dynamicTableDirective);
@@ -45734,7 +45934,7 @@ angular.module('angular.filter', [
                 notFound: '=?',
                 showExport: '=?'
             },
-            templateUrl: '/src/dynamicTable/dynamic-table.html',
+            templateUrl: path.resolve(__dirname, 'src/dynamicTable/dynamic-table.html'),
             controller: ['$scope', DynamicTableCtrl],
             controllerAs: 'vm'
         };
@@ -45778,39 +45978,19 @@ angular.module('angular.filter', [
         }
     }
 })();
+/* WEBPACK VAR INJECTION */}.call(exports, "/"))
 
 /***/ }),
-/* 29 */,
-/* 30 */
+/* 21 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-
+/* WEBPACK VAR INJECTION */(function(__dirname) {
 
 (function () {
     'use strict';
 
-    module.exports = function (ngModule) {
-        ngModule.directive('dynamicTableLoading', loadingDirective);
-    };
-
-    function loadingDirective() {
-        return {
-            restrict: 'E',
-            templateUrl: '/src/dynamicTable/loading.html'
-        };
-    }
-})();
-
-/***/ }),
-/* 31 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-(function () {
-    'use strict';
+    var path = __webpack_require__(0);
 
     module.exports = function (ngModule) {
         ngModule.directive('dynamicTableRefreshButton', dynamicTableRefreshButtonDirective);
@@ -45824,7 +46004,267 @@ angular.module('angular.filter', [
         return {
             restrict: 'E',
             scope: true,
-            templateUrl: '/src/dynamicTable/refresh-button.html'
+            templateUrl: path.resolve(__dirname, 'src/dynamicTable/refresh-button.html')
+        };
+    }
+})();
+/* WEBPACK VAR INJECTION */}.call(exports, "/"))
+
+/***/ }),
+/* 22 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/* WEBPACK VAR INJECTION */(function(__dirname) {
+
+(function () {
+    'use strict';
+
+    var path = __webpack_require__(0);
+
+    module.exports = function (ngModule) {
+        ngModule.directive('dynamicTableLoading', loadingDirective);
+    };
+
+    function loadingDirective() {
+        return {
+            restrict: 'E',
+            templateUrl: path.resolve(__dirname, 'src/dynamicTable/loading.html')
+        };
+    }
+})();
+/* WEBPACK VAR INJECTION */}.call(exports, "/"))
+
+/***/ }),
+/* 23 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+(function () {
+    'use strict';
+
+    module.exports = function (ngTablesDirectives) {
+        __webpack_require__(24)(ngTablesDirectives);
+        __webpack_require__(25)(ngTablesDirectives);
+    };
+})();
+
+/***/ }),
+/* 24 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+(function () {
+    'use strict';
+
+    module.exports = function (ngModule) {
+        ngModule.filter('filterStandartTable', ['$filter', 'StandardTableUtilities', filterStandartTable]);
+    };
+
+    /**
+     * Does the string contains substring
+     * @param  {Mixed}  value     Value to check
+     * @param  {String} substring Substring to search
+     * @return Boolean            TRUE = yes, FALSE = no
+     */
+    function contains(value, substring) {
+        if (value && substring) {
+            var regexp = new RegExp(substring, 'gi');
+            if (angular.isString(value)) {
+                return value.match(regexp) !== null;
+            } else if (angular.isNumber(value)) {
+                return value.toString().match(regexp) !== null;
+            }
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Format Table data as text.
+     */
+    function filterStandartTable($filter, StandardTableUtilities) {
+
+        /**
+         * Is there an active filter for columns?
+         * @param  {Object} filter Filter object
+         * @return {Boolean}       TRUE = yes, FALSE = no
+         */
+        function isThereActiveFilterColums(filter) {
+            var isThereActiveFilterColums = false;
+
+            for (var columnName in filter.columns) {
+                if (filter.columns[columnName]) {
+                    isThereActiveFilterColums = true;
+                    break;
+                }
+            }
+
+            return isThereActiveFilterColums;
+        }
+
+        /**
+         * Filter Row By Text
+         * @param  {Object} row               Row to check
+         * @param  {String} textFilter        Text to search
+         * @param  {Object} columnsDefinition Column definition object
+         * @return {Boolean}                  TRUE = pass the filter, FALSE = doesn't pass the filter
+         */
+        function filterRowByText(row, textFilter, columnsDefinition) {
+            for (var i = 0; i < columnsDefinition.length; i++) {
+                var value = StandardTableUtilities.getValue(row, columnsDefinition[i].field);
+                if (value && textFilter && contains(value, textFilter)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /**
+         * Filter Row By Column Filter
+         * @param  {Object} row               Row to check
+         * @param  {String} columnFilter      Column filter value
+         * @param  {Object} columnsDefinition Column definition object
+         * @return {Boolean}                  TRUE = pass the filter, FALSE = does NOT pass the filter
+         */
+        function filterRowByColumnFilters(row, columnFilter, columnsDefinition) {
+            for (var i = 0; i < columnsDefinition.length; i++) {
+                var column = columnsDefinition[i];
+                var columnFilterValue = columnFilter[column.field];
+                if (columnFilterValue) {
+                    var value = StandardTableUtilities.getValue(row, column.field);
+                    if (!filterValueColumn(value, columnFilterValue, column.filter)) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        /**
+         * Filter Value By Column Filter
+         * @param  {String} value          Value to check
+         * @param  {String} valueToCompare Value to search
+         * @param  {String} filterType     Filter type
+         * @return {Boolean}                  TRUE = pass the filter, FALSE = does NOT pass the filter
+         */
+        function filterValueColumn(value, valueToCompare, filterType) {
+            var passFilter;
+            if (valueToCompare && filterType) {
+                switch (filterType) {
+                    case 'select':
+                        passFilter = value === valueToCompare;
+                        break;
+                    //case 'text':
+                    default:
+                        passFilter = value && contains(value, valueToCompare);
+                }
+            } else {
+                passFilter = true;
+            }
+            return passFilter;
+        }
+
+        /**
+         * Filter function
+         * @param  {Array}  table             Table to filter
+         * @param  {Object} filter            Filter object
+         * @param  {Object} columnsDefinition Column definition
+         * @return {Array}                    Filtered table
+         */
+        return function (table, filter, columnsDefinition) {
+
+            var outputTable = [];
+            if (table && filter && columnsDefinition) {
+                // Check if there is any column filter to apply
+                var filterColumns = isThereActiveFilterColums(filter);
+
+                // Apply filter to each row
+                angular.forEach(table, function (row) {
+                    var passFilter = true;
+                    if (filter.textFilter || filterColumns) {
+                        // 1. Text filter (any columns)
+                        if (filter.textFilter) {
+                            passFilter = filterRowByText(row, filter.textFilter, columnsDefinition);
+                        }
+                        // 2. column filter
+                        if (passFilter && filterColumns) {
+                            passFilter = passFilter && filterRowByColumnFilters(row, filter.columns, columnsDefinition);
+                        }
+                    }
+
+                    if (passFilter) {
+                        outputTable.push(row);
+                    }
+                });
+            } else {
+                if (table && filter && filter.textFilter) {
+                    outputTable = $filter('filter')(table, filter.textFilter);
+                } else {
+                    //console.warn('To apply "filterStandartTable" filter, you have to pass a table, and a filter and a columnsDefinition objects', table, filter, columnsDefinition);
+                    outputTable = table;
+                }
+            }
+
+            return outputTable;
+        };
+    }
+})();
+
+/***/ }),
+/* 25 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+(function () {
+    'use strict';
+
+    module.exports = function (ngModule) {
+        ngModule.filter('standartTableToCsv', ['$filter', 'StandardTableUtilities', standartTableToCsvFilter]);
+    };
+
+    /**
+     * Convert a Standard table data into a CSV
+     */
+    function standartTableToCsvFilter($filter, StandardTableUtilities) {
+        /**
+         * Filter function
+         * @param  {Array}  table             Table to convert
+         * @param  {Object} columnsDefinition Column definition
+         * @param  {Object} filter            Filter object to apply
+         * @return {Array}                    Filtered table
+         */
+        return function (table, columnsDefinition, filter) {
+
+            // 1. Apply filter (if defined)
+            var filteredTable = [];
+            if (table && filter) {
+                filteredTable = $filter('filterStandartTable')(table, filter, columnsDefinition);
+            } else {
+                filteredTable = table;
+            }
+
+            // 2. Export only the columns on column definition
+            var outputTable = [];
+            if (columnsDefinition) {
+                angular.forEach(filteredTable, function (row) {
+                    var newRow = {};
+                    angular.forEach(columnsDefinition, function (column) {
+                        newRow[column.field] = StandardTableUtilities.getValue(row, column.field, '|');
+                    });
+                    outputTable.push(newRow);
+                });
+            } else {
+                outputTable = filteredTable;
+            }
+
+            return outputTable;
         };
     }
 })();

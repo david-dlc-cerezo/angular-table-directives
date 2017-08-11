@@ -1,6 +1,8 @@
 (function() {
     'use strict';
 
+    const path = require('path');
+
     module.exports = function(ngModule) {
         ngModule.directive('dynamicTableRefreshButton', dynamicTableRefreshButtonDirective);
     };
@@ -13,7 +15,7 @@
         return {
             restrict: 'E',
             scope: true,
-            templateUrl: '/src/dynamicTable/refresh-button.html'
+            templateUrl: path.resolve(__dirname, 'src/dynamicTable/refresh-button.html')
         };
     }
 })();
