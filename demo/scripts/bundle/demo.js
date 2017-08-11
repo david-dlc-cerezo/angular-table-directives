@@ -45801,7 +45801,6 @@ module.exports = "<div ng-if=\"!vm.loadingData\">\n    <standard-table ng-if=\"!
          * @return {Array}                    Filtered table
          */
         return function (table, columnsDefinition, filter) {
-            console.log(filter);
 
             // 1. Apply filter (if defined)
             var filteredTable = [];
