@@ -1,6 +1,8 @@
 (function() {
     'use strict';
 
+    const path = require('path');
+
     module.exports = function(ngModule) {
         ngModule.directive('standardTableFilterField', standardTableFilterFieldDirective);
     };
@@ -11,7 +13,7 @@
             scope: {
                 filterData: '=filter',
             },
-            templateUrl: '/src/standardTable/filter-field.html',
+            templateUrl: path.resolve(__dirname, 'src/standardTable/filter-field.html'),
             controller: [
                 '$scope',
                 StandardTableFilterFieldController

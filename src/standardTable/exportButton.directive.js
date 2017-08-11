@@ -1,6 +1,8 @@
 (function() {
     'use strict';
 
+    const path = require('path');
+
     module.exports = function(ngModule) {
         ngModule.directive('standardTableExportButton', standardTableExportButtonDirective);
     };
@@ -9,7 +11,7 @@
         return {
             restrict: 'E',
             scope: true,
-            templateUrl: '/src/standardTable/export-button.html',
+            templateUrl: path.resolve(__dirname, 'src/standardTable/export-button.html'),
             controller: [
                 '$scope',
                 StandardTableExportButtonController

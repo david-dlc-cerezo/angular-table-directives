@@ -1,6 +1,8 @@
 (function() {
     'use strict';
 
+    const path = require('path');
+
     module.exports = function(ngModule) {
         ngModule.directive('groupTables', groupTablesDirective);
     };
@@ -31,7 +33,7 @@
                 notFound: '=?',
                 showExport: '=?'
             },
-            templateUrl: '/src/groupTables/group-tables.html',
+            templateUrl: path.resolve(__dirname, 'src/groupTables/group-tables.html'),
             controller: [
                 '$scope',
                 GroupTablesCtrl
