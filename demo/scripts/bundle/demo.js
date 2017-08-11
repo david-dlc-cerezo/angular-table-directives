@@ -45801,6 +45801,7 @@ module.exports = "<div ng-if=\"!vm.loadingData\">\n    <standard-table ng-if=\"!
          * @return {Array}                    Filtered table
          */
         return function (table, columnsDefinition, filter) {
+            console.log(filter);
 
             // 1. Apply filter (if defined)
             var filteredTable = [];
@@ -45857,7 +45858,7 @@ module.exports = "<button ng-repeat=\"action in actions\" class=\"btn btn-link\"
 /* 31 */
 /***/ (function(module, exports) {
 
-module.exports = "<button ng-if=\"tableData.length\" ng-csv=\"tableData | standartTableToCsv : columns : filters\" filename=\"export.csv\" field-separator=\";\" csv-header=\"vm.headers()\" class=\"btn btn-primary\" role=\"button\">\n    <i class=\"fa fa-fw fa-file-excel-o\"></i>\n    <span>Export CSV</span>\n</button>\n";
+module.exports = "<button ng-if=\"tableData.length\" ng-csv=\"tableData | standartTableToCsv : columns : filterData\" filename=\"export.csv\" field-separator=\";\" csv-header=\"vm.headers()\" class=\"btn btn-primary\" role=\"button\">\n    <i class=\"fa fa-fw fa-file-excel-o\"></i>\n    <span>Export CSV</span>\n</button>\n";
 
 /***/ }),
 /* 32 */
